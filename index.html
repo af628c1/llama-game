@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Alpaca Rancher</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦙</text></svg>" />
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #1b2b1a;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    #game {
+      width: 100vw;
+      height: 100vh;
+    }
+    /* Phaser injects the canvas here; keep it crisp for pixel art. */
+    #game canvas {
+      image-rendering: pixelated;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <!-- Phaser is vendored locally so the game runs offline with no CDN dependency. -->
+  <script src="lib/phaser.min.js"></script>
+  <!-- Our game code is plain ES modules; Phaser is used as the window.Phaser global. -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
