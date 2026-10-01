@@ -64,5 +64,9 @@ export default class Player {
     } else {
       body.setVelocity(0, 0);
     }
+
+    // Y-sort: depth tracks the sprite's feet so the rancher passes behind building roofs
+    // when standing above them, and in front when below.
+    this.sprite.setDepth(this.sprite.y);
   }
 }

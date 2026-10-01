@@ -1,74 +1,64 @@
-// The starter ranch, built as a tile grid. Rather than hand-typing 30 rows of 40
-// characters, we generate the layout deterministically here and hand-place a few
-// features (pond, barn, paths, fence border). Swapping in a hand-authored or loaded
-// map later just means replacing `buildRanch()` with something that returns the same
-// { cols, rows, tiles } shape.
+// The ranch layout, as a tile grid plus building placements. The grid only distinguishes
+// walkable ground types (grass vs. dirt path) so the renderer can give the path soft,
+// grass-fringed edges. Buildings are placed as sprites (not tiles) with their own
+// collision footprints. Matches the user's mockup: open field, a cross-shaped path
+// (vertical road top<->bottom, horizontal road across), farmhouse top-left, barn
+// top-right. No perimeter fence — the ranch is open, with path exits top and bottom.
 
 import { WORLD_COLS, WORLD_ROWS } from '../config.js';
 
-// Tile ids. GRASS/GRASS_ALT are purely cosmetic; everything in SOLID_TILES blocks the
-// player.
+// Ground tile ids.
 export const T = {
   GRASS: 0,
-  GRASS_ALT: 1,
-  DIRT: 2,
-  WATER: 3,
-  FENCE: 4,
-  BARN: 5,
+  PATH: 1,
 };
 
-// Tiles the player cannot walk through.
-export const SOLID_TILES = new Set([T.WATER, T.FENCE, T.BARN]);
+// Vertical road (the main street): a band of columns running the full height, exiting the
+// map at top ("To ??? (TBD)") and bottom ("To town").
+const ROAD_COL_MIN = 18;
+const ROAD_COL_MAX = 21;
 
-// A player-friendly spawn point (in tile coordinates) on open ground near the barn.
-export const SPAWN = { col: 8, row: 20 };
+// Horizontal road crossing it, a few rows tall, spanning the full width.
+const ROAD_ROW_MIN = 13;
+const ROAD_ROW_MAX = 15;
 
-function fillRect(tiles, col0, row0, w, h, value) {
-  for (let r = row0; r < row0 + h; r++) {
-    for (let c = col0; c < col0 + w; c++) {
-      if (r >= 0 && r < WORLD_ROWS && c >= 0 && c < WORLD_COLS) {
-        tiles[r][c] = value;
-      }
-    }
-  }
+function inRoadCol(c) {
+  return c >= ROAD_COL_MIN && c <= ROAD_COL_MAX;
+}
+function inRoadRow(r) {
+  return r >= ROAD_ROW_MIN && r <= ROAD_ROW_MAX;
 }
 
 export function buildRanch() {
   const cols = WORLD_COLS;
   const rows = WORLD_ROWS;
 
-  // Start with a checkerboard of grass so the ground reads as textured, not flat.
   const tiles = [];
   for (let r = 0; r < rows; r++) {
     const row = [];
     for (let c = 0; c < cols; c++) {
-      row.push((r + c) % 2 === 0 ? T.GRASS : T.GRASS_ALT);
+      row.push(inRoadCol(c) || inRoadRow(r) ? T.PATH : T.GRASS);
     }
     tiles.push(row);
   }
 
-  // A pond in the north-east of the ranch.
-  fillRect(tiles, 26, 4, 8, 5, T.WATER);
-
-  // Dirt paths: a horizontal road across the middle and a vertical spur to the barn.
-  fillRect(tiles, 1, 14, cols - 2, 2, T.DIRT);
-  fillRect(tiles, 9, 16, 2, 6, T.DIRT);
-
-  // The barn (a solid building block) sits in the south-west, just off the paths.
-  fillRect(tiles, 5, 22, 6, 5, T.BARN);
-
-  // Fence border around the whole ranch, then punch a gate opening in the south wall.
-  for (let c = 0; c < cols; c++) {
-    tiles[0][c] = T.FENCE;
-    tiles[rows - 1][c] = T.FENCE;
-  }
-  for (let r = 0; r < rows; r++) {
-    tiles[r][0] = T.FENCE;
-    tiles[r][cols - 1] = T.FENCE;
-  }
-  // Gate: leave a two-tile gap at the bottom-center so it reads as an entrance.
-  tiles[rows - 1][Math.floor(cols / 2)] = T.GRASS;
-  tiles[rows - 1][Math.floor(cols / 2) + 1] = T.GRASS;
-
   return { cols, rows, tiles };
 }
+
+// Buildings. Each is placed by its bottom-center anchor in (fractional) tile coordinates,
+// so it sits naturally on the ground just above the horizontal road. `foot` is the solid
+// collision footprint (in tiles) centered on that anchor — smaller than the sprite so the
+// player collides with the walls' base but can walk *behind* the taller roof.
+export const BUILDINGS = [
+  { key: 'farmhouse', col: 6.5, row: 11.2, foot: { w: 3.2, h: 1.4 } },
+  { key: 'barn', col: 31, row: 11.2, foot: { w: 4.4, h: 1.4 } },
+];
+
+// Wooden signposts at the two path exits, with the labels from the mockup.
+export const SIGNS = [
+  { col: 22.6, row: 2.4, label: 'To ??? (TBD)' },
+  { col: 22.6, row: 27.6, label: 'To town' },
+];
+
+// Player starts on the main road, just below the crossroads and clear of the buildings.
+export const SPAWN = { col: 19.5, row: 19 };
