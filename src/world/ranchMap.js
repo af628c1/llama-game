@@ -71,5 +71,6 @@ export const SIGNS = [
   { tile: [17, 20], label: 'To town' },
 ];
 
-// The rancher starts at the crossroads, with the cabin and the shelter both in view.
-export const SPAWN = { tile: [15, 10] };
+// The rancher starts just above the crossroads, with the cabin and the shelter both in
+// view and clear of the time and weather board in the top-right corner.
+export const SPAWN = { tile: [15, 9] };

@@ -3,7 +3,7 @@
 // lead indoors, adds signposts, and follows the rancher with an integer-zoomed camera.
 // This is where future systems (alpacas, chores, day/night) will plug in.
 
-import { TILE, TEX, INTERIORS, pickZoom } from '../config.js';
+import { TILE, TEX, INTERIORS, HOME_INTERIOR, FADE, pickZoom } from '../config.js';
 import {
   GRID, LEGEND, ROWS, COLS, WORLD_WIDTH, WORLD_HEIGHT, BUILDINGS, SIGNS, SPAWN,
 } from '../world/ranchMap.js';
@@ -187,8 +187,18 @@ export default class RanchScene extends Phaser.Scene {
 
   update(time, delta) {
     const hud = this.scene.get('Hud');
-    this.player.update(delta, hud.covered);
-    if (hud.covered) return;
+    this.player.update(delta, hud.busy);
+    if (hud.busy) return;
+
+    // 2:00 am: the rancher passes out, and wakes up at home the next morning.
+    const clock = this.registry.get('time');
+    if (clock.mustSleep) {
+      hud.fadeThrough(() => {
+        clock.sleep();
+        this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
+      }, FADE.sleepHoldMs);
+      return;
+    }
 
     // Walking up into a doorway goes inside.
     const door = this.player.vy < 0

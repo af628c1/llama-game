@@ -1,16 +1,19 @@
-// BootScene gets every texture ready before the ranch starts.
+// BootScene gets every texture ready before the ranch starts, and starts the game's clock.
 //
-// Terrain, buildings and interiors are real pixel art, loaded from the art pack. Its JSON
-// files are fetched first, then every image they list is queued — terrain and buildings
-// under their manifest ids, interior rooms and furniture under their interior's id — so
-// new art in the pack needs no code change here.
+// Terrain, buildings, interiors and the HUD are real pixel art, loaded from the art pack.
+// Its JSON files are fetched first, then every image and font they list is queued —
+// terrain and buildings under their manifest ids, interior rooms and furniture under
+// their interior's id, HUD pieces under HUD_TEX — so new art in the pack needs no code
+// change here.
 //
 // The rancher and the signposts aren't in the pack yet, so they are still drawn in code
 // (Graphics -> generateTexture) at a size that matches the pack's scale. When real
 // sprites arrive, swap a bake for this.load.image(<same TEX key>, ...).
 
-import { ASSET_MANIFEST, INTERIORS, COLORS, TEX } from '../config.js';
+import { ASSET_MANIFEST, INTERIORS, HUD_SPEC, COLORS, TEX } from '../config.js';
 import { interiorKey, interiorTex } from '../world/interiors.js';
+import { HUD_TEX } from '../ui/TimePanel.js';
+import TimeState from '../state/TimeState.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -43,6 +46,17 @@ export default class BootScene extends Phaser.Scene {
       });
     });
 
+    this.load.json('hud', HUD_SPEC);
+    this.load.once('filecomplete-json-hud', (key, type, spec) => {
+      this.load.image(HUD_TEX.panel, spec.panel.file);
+      Object.entries(spec.weatherIcons).forEach(([id, icon]) => this.load.image(HUD_TEX.weather(id), icon.file));
+      Object.entries(spec.eventIcons).forEach(([id, icon]) => this.load.image(HUD_TEX.event(id), icon.file));
+      // Bitmap fonts, keyed by the names the spec's layout refers to them by.
+      Object.entries(spec.fonts).forEach(([id, font]) => {
+        if (font.files) this.load.bitmapFont(id, font.files.atlas, font.files.bmfontXml);
+      });
+    });
+
     this.load.on('loaderror', (file) => {
       console.error(`Could not load ${file.url} — is the game being served over HTTP?`);
     });
@@ -52,6 +66,13 @@ export default class BootScene extends Phaser.Scene {
     this.makeSign();
     this.makePlayer();
     this.makeShadow();
+
+    // A new game: Spring 1 of Year 1, 6:00 am, with its own run of weather. Kept in the
+    // registry, where every scene can reach it.
+    this.registry.set('time', new TimeState({
+      seed: Math.floor(Math.random() * 2 ** 31),
+      events: this.cache.json.get('hud').events.list,
+    }));
 
     // The HUD runs for the whole game, on top of whichever world scene is showing.
     this.scene.launch('Hud');

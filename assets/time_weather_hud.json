@@ -1,0 +1,374 @@
+{
+  "name": "time_weather_hud",
+  "description": "Time + weather HUD: date, year, clock, weather icon, today's birthdays/festivals. Cabin palette; same rules as manifest.json.",
+  "version": "1.0.0",
+  "units": "pixels",
+  "coords": "HUD pixels, origin = top-left of time_weather_panel.png. 'box' = [x0, x1] inclusive. baselineY = first pixel row under the letters.",
+  "art": {
+    "scaleMode": "nearest",
+    "uiScale": "Same integer zoom as the world camera (e.g. 3x for a 640x360 view on 1920x1080).",
+    "screenAnchor": "top-right",
+    "screenMargin": [6, 6],
+    "designedForView": [640, 360],
+    "notes": "Screen-space layer above the world and the night tint. Pixel-snap the HUD position."
+  },
+  "panel": {
+    "file": "assets/ui/hud/time_weather_panel.png",
+    "size": [180, 64],
+    "notes": "Log frame with end-grain corners (like the cabin), aguayo woven band, cream panel. Divider and wooden clock tag are baked in."
+  },
+  "weatherIcons": {
+    "sunny": {
+      "file": "assets/ui/hud/weather_sunny.png",
+      "size": [24, 24]
+    },
+    "overcast": {
+      "file": "assets/ui/hud/weather_overcast.png",
+      "size": [24, 24]
+    },
+    "rainy": {
+      "file": "assets/ui/hud/weather_rainy.png",
+      "size": [24, 24]
+    }
+  },
+  "eventIcons": {
+    "birthday": {
+      "file": "assets/ui/hud/event_birthday.png",
+      "size": [11, 9]
+    },
+    "festival": {
+      "file": "assets/ui/hud/event_festival.png",
+      "size": [11, 9]
+    }
+  },
+  "fonts": {
+    "kantu": {
+      "family": "Kantu",
+      "files": {
+        "bmfont": "assets/ui/fonts/kantu.fnt",
+        "bmfontXml": "assets/ui/fonts/kantu.xml",
+        "atlas": "assets/ui/fonts/kantu.png",
+        "ttf": "assets/ui/fonts/kantu.ttf"
+      },
+      "pixelSize": 13,
+      "base": 11,
+      "lineHeight": 14,
+      "capHeight": 8,
+      "xHeight": 6,
+      "glyphs": 96
+    },
+    "kantu_small": {
+      "family": "Kantu Small",
+      "files": {
+        "bmfont": "assets/ui/fonts/kantu_small.fnt",
+        "bmfontXml": "assets/ui/fonts/kantu_small.xml",
+        "atlas": "assets/ui/fonts/kantu_small.png",
+        "ttf": "assets/ui/fonts/kantu_small.ttf"
+      },
+      "pixelSize": 11,
+      "base": 9,
+      "lineHeight": 12,
+      "capHeight": 6,
+      "xHeight": 4,
+      "glyphs": 96
+    },
+    "notes": "Original pixel fonts made for this game. Atlas glyphs are white (tint them). Letter spacing is baked into xadvance. TTF: use exactly pixelSize (or an integer multiple) with antialiasing and hinting off."
+  },
+  "layout": {
+    "drawOrder": ["panel", "weatherIcon", "date", "year", "clock", "eventIcon", "eventText"],
+    "weatherIcon": {
+      "pos": [9, 16],
+      "size": [24, 24]
+    },
+    "date": {
+      "font": "kantu",
+      "box": [36, 172],
+      "baselineY": 26,
+      "lineTopY": 15,
+      "align": "center",
+      "color": "#4a2e18",
+      "shadow": "#d6bb8c",
+      "format": "{weekday}, {season} {day}"
+    },
+    "year": {
+      "font": "kantu_small",
+      "box": [36, 172],
+      "baselineY": 36,
+      "lineTopY": 27,
+      "align": "center",
+      "color": "#4a2e18",
+      "shadow": "#d6bb8c",
+      "format": "Year {year}"
+    },
+    "clock": {
+      "font": "kantu",
+      "box": [116, 171],
+      "baselineY": 53,
+      "lineTopY": 42,
+      "align": "center",
+      "color": "#fbf0d8",
+      "shadow": "#3d2412",
+      "format": "{h}:{mm} {ampm}"
+    },
+    "event": {
+      "font": "kantu_small",
+      "box": [8, 111],
+      "baselineY": 52,
+      "lineTopY": 43,
+      "align": "center",
+      "color": "#4a2e18",
+      "shadow": "#d6bb8c",
+      "format": "{label}",
+      "emptyText": "Nothing going on today",
+      "emptyColor": "#8a6a4a",
+      "emptyShadow": "#e3cca5",
+      "icon": {
+        "size": [11, 9],
+        "gapToText": 3,
+        "topY": 44,
+        "rule": "Center icon + gap + text as one group inside box."
+      },
+      "maxLabelWidth": 90,
+      "tooLong": "Trim and add '…' until it fits maxLabelWidth."
+    },
+    "textShadow": {
+      "offset": [0, 1],
+      "rule": "Draw the string in 'shadow' at +offset first, then in 'color'."
+    },
+    "textWidth": "Sum of xadvance over the string, minus 1 (the trailing letter gap).",
+    "centering": "x = box[0] + floor((box[1] - box[0] + 1 - textWidth) / 2)"
+  },
+  "calendar": {
+    "seasons": ["Spring", "Summer", "Fall", "Winter"],
+    "daysPerSeason": 28,
+    "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "start": {
+      "year": 1,
+      "season": "Spring",
+      "day": 1
+    },
+    "absoluteDay": "(year - 1) * 112 + seasonIndex * 28 + (day - 1)",
+    "weekday": "weekdays[absoluteDay % 7]. Every season starts on Monday, matching the 4x7 wall calendar in the cabin.",
+    "realWorld": "Southern-hemisphere Andes: Spring = Sep-Nov, Summer = Dec-Feb (rainy season), Fall = Mar-May, Winter = Jun-Aug (dry, frosty, clear)."
+  },
+  "clock": {
+    "dayStartMinutes": 360,
+    "passOutMinutes": 1560,
+    "tick": {
+      "gameMinutes": 10,
+      "realSeconds": 7
+    },
+    "display": "12-hour, lowercase am/pm, 10-minute steps (6:00 am ... 12:00 am ... 1:50 am).",
+    "pauseWhen": ["menus", "dialogue", "cutscenes", "calendar open"],
+    "dayNight": {
+      "duskStartMinutes": 1080,
+      "nightStartMinutes": 1140,
+      "nightEndMinutes": 360,
+      "notes": "Near 15 deg S the sun rises about 6 am and sets about 6 pm all year. nightStart turns on the cabin's window_night overlay."
+    },
+    "onSleep": "Bed 'sleep' action: go to the next day at dayStartMinutes, then roll the weather.",
+    "onPassOut": "At passOutMinutes: same as sleep (add any penalty later)."
+  },
+  "weather": {
+    "types": ["sunny", "overcast", "rainy"],
+    "roll": "Once at the start of each day. Also pre-roll tomorrow so a forecast can show it later.",
+    "rng": "Seeded: seed = saveSeed * 1000 + absoluteDay, so reloading a save gives the same weather.",
+    "chances": {
+      "Spring": {
+        "sunny": 0.55,
+        "overcast": 0.3,
+        "rainy": 0.15
+      },
+      "Summer": {
+        "sunny": 0.25,
+        "overcast": 0.35,
+        "rainy": 0.4
+      },
+      "Fall": {
+        "sunny": 0.5,
+        "overcast": 0.3,
+        "rainy": 0.2
+      },
+      "Winter": {
+        "sunny": 0.8,
+        "overcast": 0.17,
+        "rainy": 0.03
+      }
+    },
+    "fixed": [
+      {
+        "year": 1,
+        "season": "Spring",
+        "day": 1,
+        "weather": "sunny",
+        "why": "first day of the game"
+      }
+    ],
+    "eventOverride": "If today's event has forceWeather, use it.",
+    "effects": {
+      "sunny": {},
+      "overcast": {},
+      "rainy": {
+        "waterCrops": true,
+        "alpacasPreferShelter": true,
+        "notes": "Hooks for later: rain waters tilled soil; alpacas head for the run-in shelter."
+      }
+    }
+  },
+  "events": {
+    "fields": {
+      "id": "string",
+      "type": "birthday | festival (picks the icon)",
+      "label": "HUD text, must fit maxLabelWidth (about 20 characters)",
+      "season": "Spring | Summer | Fall | Winter",
+      "day": "1-28",
+      "villagerId": "birthdays only",
+      "forceWeather": "optional"
+    },
+    "display": {
+      "none": "Nothing going on today (muted colour)",
+      "several": "Show one at a time, festivals first, swap every 4 s.",
+      "refresh": "Rebuild today's list when the day changes."
+    },
+    "list": [
+      {
+        "id": "rosa_birthday",
+        "type": "birthday",
+        "label": "Rosa's birthday",
+        "season": "Spring",
+        "day": 9,
+        "villagerId": "rosa",
+        "example": true
+      },
+      {
+        "id": "shearing_fair",
+        "type": "festival",
+        "label": "Shearing Fair",
+        "season": "Spring",
+        "day": 23,
+        "note": "Shearing season starts as the rains arrive (Nov)."
+      },
+      {
+        "id": "mateo_birthday",
+        "type": "birthday",
+        "label": "Mateo's birthday",
+        "season": "Summer",
+        "day": 18,
+        "villagerId": "mateo",
+        "example": true
+      },
+      {
+        "id": "pukllay",
+        "type": "festival",
+        "label": "Pukllay Carnival",
+        "season": "Summer",
+        "day": 24,
+        "note": "Andean carnival (Feb), in the rainy season, so rain is allowed."
+      },
+      {
+        "id": "inti_raymi",
+        "type": "festival",
+        "label": "Inti Raymi",
+        "season": "Winter",
+        "day": 7,
+        "forceWeather": "sunny",
+        "note": "Festival of the Sun, 24 June."
+      },
+      {
+        "id": "pachamama_day",
+        "type": "festival",
+        "label": "Pachamama Day",
+        "season": "Winter",
+        "day": 19,
+        "note": "Offerings to Mother Earth, 1 August."
+      }
+    ],
+    "notes": "Birthdays are placeholders until the villagers exist. Festivals are real Andean dates mapped onto the 28-day seasons."
+  },
+  "palette": {
+    "comment": "HUD colours (hex). Frame and yarn colours are the cabin/interior palette.",
+    "frameLogs": ["#c99553", "#b07a3e", "#9c6a34", "#6e4a2a", "#3d2412"],
+    "endGrain": ["#b98a52", "#9c6a34", "#8a5a2e", "#7a5227"],
+    "panel": ["#f3e2c3", "#ecd8b5", "#e6cfa6", "#dcc196", "#c4a57a"],
+    "aguayoYarn": ["#d9772e", "#b8323a", "#e8b84a", "#efe6cf", "#b0407a", "#3f8a5a"],
+    "clockTag": ["#916034", "#7a4d28", "#5a3619"],
+    "text": {
+      "ink": "#4a2e18",
+      "inkShadow": "#d6bb8c",
+      "muted": "#8a6a4a",
+      "mutedShadow": "#e3cca5",
+      "tagInk": "#fbf0d8",
+      "tagShadow": "#3d2412"
+    },
+    "sun": ["#fff3b8", "#ffd65a", "#f2a63a", "#f7b53d", "#9c4f1c"],
+    "cloud": ["#ffffff", "#f2f1ec", "#d5d9e1", "#b9c0cd", "#4b5470"],
+    "rainCloud": ["#e7eaf0", "#c4cad6", "#a0a8ba", "#878fa4", "#3b4359"],
+    "rain": ["#d6f1f5", "#7ebdc9", "#539bab", "#2a5b68"]
+  },
+  "referenceStates": [
+    {
+      "id": "sunny",
+      "reference": "reference/time_weather_hud_sunny.png",
+      "input": {
+        "year": 1,
+        "season": "Spring",
+        "day": 1,
+        "minutes": 360,
+        "weather": "sunny",
+        "events": []
+      },
+      "expectText": {
+        "date": "Monday, Spring 1",
+        "year": "Year 1",
+        "clock": "6:00 am",
+        "event": "Nothing going on today"
+      }
+    },
+    {
+      "id": "overcast_birthday",
+      "reference": "reference/time_weather_hud_overcast_birthday.png",
+      "input": {
+        "year": 1,
+        "season": "Summer",
+        "day": 18,
+        "minutes": 870,
+        "weather": "overcast",
+        "events": [
+          {
+            "type": "birthday",
+            "label": "Mateo's birthday"
+          }
+        ]
+      },
+      "expectText": {
+        "date": "Thursday, Summer 18",
+        "year": "Year 1",
+        "clock": "2:30 pm",
+        "event": "Mateo's birthday"
+      }
+    },
+    {
+      "id": "rainy_festival",
+      "reference": "reference/time_weather_hud_rainy_festival.png",
+      "input": {
+        "year": 2,
+        "season": "Summer",
+        "day": 24,
+        "minutes": 1310,
+        "weather": "rainy",
+        "events": [
+          {
+            "type": "festival",
+            "label": "Pukllay Carnival"
+          }
+        ]
+      },
+      "expectText": {
+        "date": "Wednesday, Summer 24",
+        "year": "Year 2",
+        "clock": "9:50 pm",
+        "event": "Pukllay Carnival"
+      }
+    }
+  ]
+}

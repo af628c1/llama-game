@@ -1,26 +1,25 @@
 // The inside of a building: one fixed room, centered on screen, built entirely from the
 // art pack's interior spec (assets/<name>_interior.json) — which images to draw and in
-// what order, what is solid, where the rancher arrives and where the way out is. The
-// scene is started with { id }, an entry of INTERIORS in config.js.
+// what order, what is solid, what can be used, where the rancher arrives and where the
+// way out is. The scene is started with { id }, an entry of INTERIORS in config.js, and
+// { wake: true } when the rancher is waking up here rather than walking in.
 //
 // Room pixels are world pixels here: the room's top-left is the world's origin.
 
-import { INTERIOR_CHARACTER, PLAYER_SPEED } from '../config.js';
+import { INTERIOR_CHARACTER, PLAYER_SPEED, FADE } from '../config.js';
 import { interiorKey, interiorTex } from '../world/interiors.js';
 import { boxFromRect, bodyOverlaps } from '../world/rects.js';
 import Player from '../entities/Player.js';
-
-// There is no day/night cycle yet. Objects marked `when: 'night'` (the window's night
-// view) wait for one.
-const TIME_OF_DAY = 'day';
 
 export default class InteriorScene extends Phaser.Scene {
   constructor() {
     super('Interior');
   }
 
-  create({ id }) {
+  create({ id, wake }) {
     const spec = this.cache.json.get(interiorKey(id));
+    this.spec = spec;
+    this.clock = this.registry.get('time');
     [this.roomW, this.roomH] = spec.room.size;
 
     this.cameras.main.setBackgroundColor(spec.art.sceneClearColor);
@@ -30,8 +29,8 @@ export default class InteriorScene extends Phaser.Scene {
 
     this.buildRoom(id, spec);
 
-    // Arrive just inside the door.
-    const { feet: [x, y], facing } = spec.spawns.fromFarm;
+    // Arrive just inside the door — or, waking up, beside the bed.
+    const { feet: [x, y], facing } = wake ? this.bedside() : spec.spawns.fromFarm;
     this.player = new Player(this, x, y, {
       scale: INTERIOR_CHARACTER.scale,
       speed: PLAYER_SPEED * INTERIOR_CHARACTER.speedScale,
@@ -57,9 +56,12 @@ export default class InteriorScene extends Phaser.Scene {
 
     this.add.image(0, 0, interiorTex(id, 'room')).setOrigin(0, 0).setDepth(layerDepth('base'));
 
-    spec.objects.forEach((o) => {
-      if (o.when && o.when !== TIME_OF_DAY) return;
+    // What using an object does, by the spec's `interact.action`. Actions without an
+    // entry here (the calendar's, for now) aren't clickable yet.
+    const actions = { sleep: () => this.askToSleep() };
+    this.nightOnly = []; // objects that only show after dark (the window's night view)
 
+    spec.objects.forEach((o) => {
       const key = interiorTex(id, o.id);
       const [x, y] = o.pos;
       let obj;
@@ -80,6 +82,14 @@ export default class InteriorScene extends Phaser.Scene {
       obj.setDepth(o.layer === 'ySorted' ? o.ySortLineY : layerDepth(o.layer));
 
       if (o.collision) this.addSolid(o.collision);
+      if (o.when === 'night') this.nightOnly.push(obj.setVisible(this.clock.isNight));
+
+      // Click the object itself (not the empty corners of its image) to use it.
+      const action = o.interact && actions[o.interact.action];
+      if (action) {
+        obj.setInteractive({ pixelPerfect: true, useHandCursor: true });
+        obj.on('pointerdown', action);
+      }
     });
 
     // The spec's collision block: each entry is one rect or a list of them (plus notes).
@@ -98,6 +108,31 @@ export default class InteriorScene extends Phaser.Scene {
     this.solids.add(body);
   }
 
+  // Where the rancher stands after a night's sleep: alongside the bed, at the outer edge
+  // of the first of its "stand here to use it" zones so they are clear of the bedframe.
+  bedside() {
+    const bed = this.spec.objects.find((o) => o.interact && o.interact.action === 'sleep');
+    const [x0, y0, x1, y1] = bed.interact.zones[0];
+    const [bedX0, , bedX1] = bed.collision;
+    const zoneIsRightOfBed = x0 + x1 > bedX0 + bedX1;
+    return { feet: [zoneIsRightOfBed ? x1 : x0, Math.floor((y0 + y1) / 2)], facing: 'down' };
+  }
+
+  askToSleep() {
+    this.scene.get('Hud').confirm('Do you want to sleep?', () => this.sleepUntilMorning());
+  }
+
+  // Fade out, let the night pass (the new day's weather comes in here), and fade back in
+  // on the rancher standing by the bed.
+  sleepUntilMorning() {
+    this.scene.get('Hud').fadeThrough(() => {
+      this.clock.sleep();
+      const { feet: [x, y], facing } = this.bedside();
+      this.player.placeAt(x, y);
+      this.player.facing = facing;
+    }, FADE.sleepHoldMs);
+  }
+
   outline({ x, y, w, h }) {
     this.add.rectangle(x + w / 2, y + h / 2, w, h).setStrokeStyle(1, 0x00ff66).setDepth(1e6);
   }
@@ -113,8 +148,15 @@ export default class InteriorScene extends Phaser.Scene {
 
   update(time, delta) {
     const hud = this.scene.get('Hud');
-    this.player.update(delta, hud.covered);
-    if (hud.covered) return;
+    this.player.update(delta, hud.busy);
+    this.nightOnly.forEach((obj) => obj.setVisible(this.clock.isNight));
+    if (hud.busy) return;
+
+    // 2:00 am: too tired to stay up.
+    if (this.clock.mustSleep) {
+      this.sleepUntilMorning();
+      return;
+    }
 
     const exit = this.player.vy > 0
       && this.exits.find(({ box }) => bodyOverlaps(this.player.feet.body, box));
