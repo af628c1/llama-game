@@ -16,6 +16,24 @@ export const BUILDING_SCALE = 1.5;
 // Player movement, in world pixels per second (Arcade Physics velocity).
 export const PLAYER_SPEED = 90;
 
+// The hop (Space): how high the rancher rises, in pixels at 1x, and how long they are in
+// the air. A press up to `bufferMs` before landing still counts, so hops chain cleanly.
+export const JUMP = { height: 10, durationMs: 380, bufferMs: 120 };
+
+// Going through a door: fade to black, hold a beat, fade back in (milliseconds).
+export const FADE = { outMs: 220, holdMs: 160, inMs: 260 };
+
+// Interiors, by id, and the art pack file that describes each one. A spec's
+// `exteriorLink.building` says which building's door leads to it.
+export const INTERIORS = {
+  cabin: 'assets/cabin_interior.json',
+};
+
+// Interior art is drawn for a rancher about one tile wide and 1.4 tall — twice the size
+// of the outdoor placeholder — so indoors the rancher is drawn at 2x. Walking speed is
+// raised with them, a little less than in proportion so small rooms don't feel frantic.
+export const INTERIOR_CHARACTER = { scale: 2, speedScale: 1.5 };
+
 // Pixel art must be scaled by whole numbers only. Pick the largest integer zoom (within
 // 2x–4x) that still shows roughly 15x10 tiles, then bump it if the window would otherwise
 // be bigger than the whole world.
@@ -49,4 +67,5 @@ export const COLORS = {
 export const TEX = {
   sign: 'sign',
   player: 'player',
+  shadow: 'shadow',
 };

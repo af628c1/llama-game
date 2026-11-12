@@ -1,8 +1,10 @@
 // Game entry point: configures Phaser and registers the scenes. Boot loads the art, then
-// hands off to the Ranch world (which runs the HUD alongside it).
+// starts the Ranch with the HUD on top; walking through a door swaps the Ranch for an
+// Interior and back. Scenes draw in the order listed, so the HUD must stay last.
 
 import BootScene from './scenes/BootScene.js';
 import RanchScene from './scenes/RanchScene.js';
+import InteriorScene from './scenes/InteriorScene.js';
 import HudScene from './scenes/HudScene.js';
 
 const config = {
@@ -24,7 +26,7 @@ const config = {
       debug: new URLSearchParams(window.location.search).has('debug'),
     },
   },
-  scene: [BootScene, RanchScene, HudScene],
+  scene: [BootScene, RanchScene, InteriorScene, HudScene],
 };
 
 // Expose the game instance for debugging in the browser console.

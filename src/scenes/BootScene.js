@@ -1,14 +1,16 @@
 // BootScene gets every texture ready before the ranch starts.
 //
-// Terrain and buildings are real pixel art, loaded from the art pack: the manifest is
-// fetched first, then every terrain tile and building it lists is queued under its
-// manifest id — so a new tile or building in the pack needs no code change here.
+// Terrain, buildings and interiors are real pixel art, loaded from the art pack. Its JSON
+// files are fetched first, then every image they list is queued — terrain and buildings
+// under their manifest ids, interior rooms and furniture under their interior's id — so
+// new art in the pack needs no code change here.
 //
 // The rancher and the signposts aren't in the pack yet, so they are still drawn in code
 // (Graphics -> generateTexture) at a size that matches the pack's scale. When real
 // sprites arrive, swap a bake for this.load.image(<same TEX key>, ...).
 
-import { ASSET_MANIFEST, COLORS, TEX } from '../config.js';
+import { ASSET_MANIFEST, INTERIORS, COLORS, TEX } from '../config.js';
+import { interiorKey, interiorTex } from '../world/interiors.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -24,6 +26,23 @@ export default class BootScene extends Phaser.Scene {
         this.load.image(id, file);
       });
     });
+    Object.entries(INTERIORS).forEach(([id, url]) => {
+      const key = interiorKey(id);
+      this.load.json(key, url);
+      this.load.once(`filecomplete-json-${key}`, (k, type, spec) => {
+        this.load.image(interiorTex(id, 'room'), spec.room.file);
+        spec.objects.forEach((o) => {
+          if (o.frameSize) {
+            // An animation strip (the fire): equal frames side by side.
+            const [frameWidth, frameHeight] = o.frameSize;
+            this.load.spritesheet(interiorTex(id, o.id), o.file, { frameWidth, frameHeight });
+          } else {
+            this.load.image(interiorTex(id, o.id), o.file);
+          }
+        });
+      });
+    });
+
     this.load.on('loaderror', (file) => {
       console.error(`Could not load ${file.url} — is the game being served over HTTP?`);
     });
@@ -32,7 +51,10 @@ export default class BootScene extends Phaser.Scene {
   create() {
     this.makeSign();
     this.makePlayer();
+    this.makeShadow();
 
+    // The HUD runs for the whole game, on top of whichever world scene is showing.
+    this.scene.launch('Hud');
     this.scene.start('Ranch');
   }
 
@@ -62,7 +84,18 @@ export default class BootScene extends Phaser.Scene {
     });
   }
 
-  // The rancher, sized to the cabin's door (14x22). Origin is set to the feet when placed.
+  // A soft oval under the rancher's feet. It stays on the ground during a hop, which is
+  // what makes the hop read as height.
+  makeShadow() {
+    this.bake(TEX.shadow, 10, 4, (g) => {
+      g.fillStyle(0x000000, 1);
+      g.fillRect(2, 0, 6, 1);
+      g.fillRect(0, 1, 10, 2);
+      g.fillRect(2, 3, 6, 1);
+    });
+  }
+
+  // The rancher (14x22). Origin is set to the feet when placed.
   makePlayer() {
     this.bake(TEX.player, 14, 22, (g) => {
       // Legs.

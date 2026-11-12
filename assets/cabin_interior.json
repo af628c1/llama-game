@@ -1,0 +1,198 @@
+{
+  "name": "cabin_interior",
+  "description": "Starter-home interior of the log cabin (assets/buildings/cabin.png). Top-down 3/4 view; same palette, 32px grid and rules as manifest.json.",
+  "version": "1.0.0",
+  "units": "pixels",
+  "tileSize": 32,
+  "coords": "ROOM pixel coords: origin = top-left of room_base.png. Rects are [x0, y0, x1, y1] inclusive. Sprites are drawn with their top-left at 'pos'.",
+  "art": {
+    "scaleMode": "nearest",
+    "comment": "Smoothing off, integer zoom only (same as manifest.json). Sprites are transparent RGBA; contact shadows and fire glow are baked in as semi-transparent pixels.",
+    "sceneClearColor": "#1b1714",
+    "intendedCharacterScale": "Furniture is sized for a farmer roughly 1 tile wide and ~1.4 tiles tall (feet at bottom-center)."
+  },
+  "room": {
+    "file": "assets/interiors/cabin/room_base.png",
+    "size": [288, 256],
+    "sizeTiles": [9, 8],
+    "floorRect": [32, 64, 255, 223],
+    "floorTiles": {
+      "originTile": [1, 2],
+      "sizeTiles": [7, 5]
+    },
+    "notes": "Walls, plank floor, window (day view), stone fireplace + hearth, doorway with stone step. Transparent outside the walls. Room is smaller than most viewports: center it, no scrolling."
+  },
+  "drawOrder": ["base", "nightOverlay", "floorDecal", "wallDecor", "fire", "ySorted"],
+  "drawOrderNotes": "ySorted = furniture + player (+ any pets/NPCs), sorted each frame by ySortLineY (furniture) vs feet Y (characters). Everything in earlier layers is always behind characters.",
+  "objects": [
+    {
+      "id": "bed",
+      "layer": "ySorted",
+      "file": "assets/interiors/cabin/bed.png",
+      "size": [45, 90],
+      "pos": [33, 34],
+      "ySortLineY": 121,
+      "collision": [33, 64, 75, 121],
+      "interact": {
+        "action": "sleep",
+        "zones": [
+          [76, 66, 92, 121],
+          [33, 122, 79, 138]
+        ]
+      },
+      "notes": "Log-frame bed, aguayo-striped wool blanket. Headboard overlaps the back wall (intended)."
+    },
+    {
+      "id": "table",
+      "layer": "ySorted",
+      "file": "assets/interiors/cabin/table.png",
+      "size": [34, 36],
+      "pos": [206, 96],
+      "ySortLineY": 129,
+      "collision": [206, 112, 237, 129],
+      "notes": "Pine table with a clay bowl of native potatoes and a clay cup."
+    },
+    {
+      "id": "stool",
+      "layer": "ySorted",
+      "file": "assets/interiors/cabin/stool.png",
+      "size": [18, 25],
+      "pos": [187, 105],
+      "ySortLineY": 127,
+      "collision": [188, 116, 201, 127],
+      "notes": "Three-legged stool."
+    },
+    {
+      "id": "rug",
+      "layer": "floorDecal",
+      "file": "assets/interiors/cabin/rug.png",
+      "size": [80, 43],
+      "pos": [100, 140],
+      "notes": "Woven alpaca-wool rug, natural undyed colours, stepped-diamond motif. Walkable."
+    },
+    {
+      "id": "doormat",
+      "layer": "floorDecal",
+      "file": "assets/interiors/cabin/doormat.png",
+      "size": [30, 12],
+      "pos": [129, 209],
+      "notes": "Totora reed mat by the door. Walkable."
+    },
+    {
+      "id": "calendar",
+      "layer": "wallDecor",
+      "file": "assets/interiors/cabin/calendar.png",
+      "size": [17, 27],
+      "pos": [132, 16],
+      "interact": {
+        "action": "open_calendar",
+        "zones": [
+          [124, 66, 155, 86]
+        ],
+        "facing": "up"
+      },
+      "notes": "Paper calendar (alpaca picture, 4 weeks x 7 days)."
+    },
+    {
+      "id": "chullo_peg",
+      "layer": "wallDecor",
+      "file": "assets/interiors/cabin/chullo_peg.png",
+      "size": [13, 25],
+      "pos": [161, 16],
+      "notes": "Knitted Andean chullo hat hanging on a wall peg. Decor only."
+    },
+    {
+      "id": "kantuta_pot",
+      "layer": "wallDecor",
+      "file": "assets/interiors/cabin/kantuta_pot.png",
+      "size": [9, 12],
+      "pos": [103, 32],
+      "notes": "Kantuta flower in a clay pot on the window sill. Draw above window_night."
+    },
+    {
+      "id": "fire",
+      "layer": "fire",
+      "file": "assets/interiors/cabin/fire.png",
+      "size": [112, 29],
+      "pos": [210, 44],
+      "frameSize": [28, 29],
+      "frames": 4,
+      "frameMs": 140,
+      "loop": true,
+      "notes": "Horizontal strip, 4 frames. Includes semi-transparent glow on the firebox and hearth (alpha-blend it)."
+    },
+    {
+      "id": "window_night",
+      "layer": "nightOverlay",
+      "file": "assets/interiors/cabin/window_night.png",
+      "size": [24, 20],
+      "pos": [88, 21],
+      "when": "night",
+      "notes": "Covers only the 4 window panes (muntins left transparent). Day view is baked into room_base."
+    }
+  ],
+  "collision": {
+    "walls": [
+      [0, 0, 287, 65],
+      [0, 0, 31, 255],
+      [256, 0, 287, 255],
+      [0, 224, 127, 255],
+      [160, 224, 287, 255],
+      [128, 232, 159, 255]
+    ],
+    "fireplaceHearth": [196, 64, 251, 75],
+    "notes": "Solid = walls + fireplaceHearth + each object's 'collision'. Leave the doorway gap [128..159] open down to the exit trigger. Use a small feet hitbox for the player (~14x6 px)."
+  },
+  "walkableGrid": {
+    "comment": "Conservative tile-level approximation (9x8) for pathfinding/AI: a tile is blocked if any solid rect touches its central 16x16. '.' walkable, '#' blocked, 'D' exit. Use the rects for actual player movement.",
+    "rows": [
+      "#########",
+      "#########",
+      "###...###",
+      "###...###",
+      "#.......#",
+      "#.......#",
+      "#.......#",
+      "####D####"
+    ]
+  },
+  "spawns": {
+    "fromFarm": {
+      "feet": [144, 214],
+      "facing": "up"
+    }
+  },
+  "exits": [
+    {
+      "id": "front_door",
+      "trigger": [128, 222, 159, 231],
+      "fireWhen": "player feet hitbox overlaps trigger while moving down",
+      "to": {
+        "scene": "farm",
+        "building": "cabin",
+        "spawn": "exteriorLink.exitSpawnFeet",
+        "facing": "down"
+      }
+    }
+  ],
+  "exteriorLink": {
+    "building": "cabin",
+    "comment": "Coords are in cabin.png pixels (64x64). World = cabin sprite's placed top-left + these values.",
+    "doorRect": [26, 30, 34, 55],
+    "entryTrigger": [25, 56, 35, 62],
+    "enterWhen": "player feet hitbox overlaps entryTrigger while moving up (or action button while facing up)",
+    "exitSpawnFeet": [30, 70],
+    "exitFacing": "down"
+  },
+  "palette": {
+    "comment": "Exterior-matched colours plus interior additions (hex).",
+    "logs": ["#c99553", "#b07a3e", "#9c6a34", "#6e4a2a"],
+    "floorPlanks": ["#946339", "#8e5f37", "#99683c", "#906136", "#5e3f22"],
+    "stone": ["#a6aab1", "#8a8d94", "#6f7379", "#5c5f66"],
+    "furniture": ["#916034", "#7a4d28", "#5a3619", "#b98a52", "#a06d3a", "#7a5227"],
+    "textiles": ["#b8323a", "#b0407a", "#d9772e", "#3f8a5a", "#e8b84a", "#2f3f73", "#efe6cf"],
+    "alpacaWool": ["#e9dfc7", "#c8a77a", "#8b6a4a", "#5b4632"],
+    "clay": ["#c0704a", "#a8573a", "#7a3a24"],
+    "fire": ["#fff1b0", "#ffd65a", "#ff8a2a", "#e0552a"]
+  }
+}
