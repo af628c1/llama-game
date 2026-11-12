@@ -25,8 +25,8 @@ export const GRID = [
   'gggggggggggggggddgggggfggggggggg',
   'gggggggggggggggddggfggggggfggggg',
   'gggggfggggggfggddggggggggggggggg',
-  'gggggggggggggggddgggbbbbbgggggfg',
-  'gggfgggggggggggddggbbbbbbbgggggg',
+  'gggggggggggggggddgggggggfgggggfg',
+  'gggfgggggggggggddgggbbbbbggggggg',
   'gggggggggggggggddggbbbbbbbgggggg',
   'ggggggggdgggggfddggbbbbbbbgggggg',
   'ggggggggdggggggddgggbbbbbggggggg',
@@ -59,7 +59,7 @@ GRID.forEach((row, r) => {
 
 // Buildings, by manifest id. Each is placed with its bottom-center on the bottom-center
 // of `anchorTile` [col, row]; the terrain underneath stays as drawn. They are drawn at
-// BUILDING_SCALE (config.js), so the cabin covers about 4x4 tiles and the shelter 4.5x3.
+// BUILDING_SCALE (config.js), so the cabin covers 3x3 tiles and the shelter about 3.4x2.3.
 export const BUILDINGS = [
   { id: 'cabin', anchorTile: [8, 8] }, // the walkway in col 8 starts at its doorstep
   { id: 'run_in_shelter', anchorTile: [22, 8] }, // open front faces the yard + road

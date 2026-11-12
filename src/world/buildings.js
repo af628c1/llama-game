@@ -47,7 +47,7 @@ export function buildingSpecs(manifest) {
       width: b.size[0] * k,
       height: b.size[1] * k,
       sortY: b.ySortLineY * k,
-      solids: solidsPx.map((rect) => rect.map((v) => v * k)),
+      solids: solidsPx.map((rect) => rect.map((v) => Math.round(v * k))),
       backSortY: tune.backSortY === undefined ? undefined : tune.backSortY * k,
       // Image pixels (these are crops of the texture itself):
       frontPx: tune.frontPx,

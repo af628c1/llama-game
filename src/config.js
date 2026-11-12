@@ -7,9 +7,11 @@ export const TILE = 32; // pixel size of one tile — matches the art pack's 32p
 // The art pack's manifest. Its `file` paths are relative to the project root.
 export const ASSET_MANIFEST = 'assets/manifest.json';
 
-// Buildings are drawn larger than their PNGs so they are in proportion to the rancher
-// (and, later, the 32px alpacas). Whole numbers only — fractional scales smear pixel art.
-export const BUILDING_SCALE = 2;
+// Buildings are drawn larger than their PNGs so they are in proportion to the rancher.
+// At 1.5 a building pixel is exactly 3 or 6 screen pixels when the camera zoom is 2x or
+// 4x; at 3x zoom it alternates between 4 and 5, a slight unevenness in the finest details.
+// Whole numbers (1, 2) are perfectly even at every zoom.
+export const BUILDING_SCALE = 1.5;
 
 // Player movement, in world pixels per second (Arcade Physics velocity).
 export const PLAYER_SPEED = 90;

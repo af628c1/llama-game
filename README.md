@@ -39,8 +39,8 @@ Then open **http://localhost:8000** in your browser.
   (top-right). The shelter's front is open: walk in and stand on the straw under the roof.
 - A rancher you walk around in all directions, with a camera that follows you.
 - Depth-sorted buildings: you walk **behind** roofs and posts and collide only with walls.
-- Buildings are drawn at 2× their PNG size (`BUILDING_SCALE` in `src/config.js`) so they
-  are in proportion to the rancher.
+- Buildings are drawn at 1.5× their PNG size (`BUILDING_SCALE` in `src/config.js`) so
+  they are in proportion to the rancher.
 - Crisp pixels at any window size — the camera only ever zooms by whole numbers (2×–4×).
 
 ## How it's built
