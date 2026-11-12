@@ -1,19 +1,17 @@
-// The playable world: it composes the ground (varied grass + a soft-edged dirt path) into
-// a single baked texture, places the farmhouse and barn as depth-sorted sprites with
-// collision footprints, adds signposts, and follows the rancher with the camera. This is
-// where future systems (alpacas, chores, day/night) will plug in.
+// The playable world. It lays the ground out from the tile grid, places the buildings as
+// depth-sorted sprites with the collision the art pack describes, adds signposts, and
+// follows the rancher with an integer-zoomed camera. This is where future systems
+// (alpacas, chores, day/night) will plug in.
 
-import { TILE, WORLD_WIDTH, WORLD_HEIGHT, COLORS, TEX } from '../config.js';
-import { buildRanch, T, BUILDINGS, SIGNS, SPAWN } from '../world/ranchMap.js';
+import { TILE, TEX, pickZoom } from '../config.js';
+import {
+  GRID, LEGEND, ROWS, COLS, WORLD_WIDTH, WORLD_HEIGHT, BUILDINGS, SIGNS, SPAWN,
+} from '../world/ranchMap.js';
+import { buildingSpecs } from '../world/buildings.js';
 import Player from '../entities/Player.js';
 
-// Small deterministic hash so each tile's grass variant / scattered detail is stable
-// frame-to-frame (and run-to-run) instead of shimmering.
-function hash(c, r) {
-  let h = (c * 73856093) ^ (r * 19349663);
-  h = (h ^ (h >>> 13)) >>> 0;
-  return h;
-}
+// Sign label size in world pixels (it is rendered at screen resolution — see applyZoom).
+const LABEL_FONT_PX = 6;
 
 export default class RanchScene extends Phaser.Scene {
   constructor() {
@@ -21,115 +19,130 @@ export default class RanchScene extends Phaser.Scene {
   }
 
   create() {
-    const map = buildRanch();
-    this.buildGround(map);
-    this.buildBuildings();
+    const manifest = this.cache.json.get('manifest');
+
+    // Everything the rancher bumps into: water tiles and building walls.
+    this.solids = this.physics.add.staticGroup();
+
+    this.buildGround(manifest);
+    this.buildBuildings(manifest);
     this.buildSigns();
 
-    // The player.
-    this.player = new Player(this, SPAWN.col, SPAWN.row);
+    this.player = new Player(this, ...SPAWN.tile);
     this.physics.add.collider(this.player.sprite, this.solids);
 
-    // World + camera bounds, with a pixel-crisp follow.
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
     this.cameras.main.roundPixels = true;
 
-    this.createHud();
+    this.applyZoom();
+    this.scale.on('resize', this.applyZoom, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this.applyZoom, this));
+
+    // The HUD is its own scene so the world camera's zoom doesn't scale it.
+    this.scene.launch('Hud');
   }
 
-  // Bake the whole ground into one RenderTexture: grass everywhere (with variants +
-  // sparse details), the dirt path on top, then grass-tuft fringe where path meets grass.
-  buildGround(map) {
-    const rt = this.add.renderTexture(0, 0, WORLD_WIDTH, WORLD_HEIGHT).setOrigin(0, 0);
-    rt.setDepth(-1000);
+  // An invisible static body, given by its top-left corner and size in world pixels.
+  addSolid(left, top, width, height) {
+    const body = this.add.rectangle(left + width / 2, top + height / 2, width, height);
+    body.setVisible(false);
+    this.solids.add(body);
+  }
 
-    // Pass 1: grass base + occasional detail.
-    for (let r = 0; r < map.rows; r++) {
-      for (let c = 0; c < map.cols; c++) {
-        const h = hash(c, r);
-        rt.draw(TEX.grass[h % TEX.grass.length], c * TILE, r * TILE);
-        if (map.tiles[r][c] === T.GRASS && h % 100 < 7) {
-          rt.draw(TEX.grassDetails[(h >> 5) % TEX.grassDetails.length], c * TILE, r * TILE);
+  // Stamp the whole ground into one texture (the tiles are seamless, so they simply
+  // butt together), and block every non-walkable tile.
+  buildGround(manifest) {
+    const walkable = {};
+    manifest.terrain.tiles.forEach((t) => { walkable[t.id] = t.walkable; });
+
+    const rt = this.add.renderTexture(0, 0, WORLD_WIDTH, WORLD_HEIGHT).setOrigin(0, 0);
+    rt.setDepth(-1); // below everything that is y-sorted
+
+    rt.beginDraw();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        rt.batchDrawFrame(LEGEND[GRID[r][c]], undefined, c * TILE, r * TILE);
+      }
+    }
+    rt.endDraw();
+
+    // One body per horizontal run of blocked tiles rather than one per tile.
+    for (let r = 0; r < ROWS; r++) {
+      let runStart = -1;
+      for (let c = 0; c <= COLS; c++) {
+        const blocked = c < COLS && !walkable[LEGEND[GRID[r][c]]];
+        if (blocked && runStart < 0) runStart = c;
+        if (!blocked && runStart >= 0) {
+          this.addSolid(runStart * TILE, r * TILE, (c - runStart) * TILE, TILE);
+          runStart = -1;
         }
       }
     }
-
-    // Pass 2: path tiles + fringe on sides that border grass.
-    const isGrass = (c, r) =>
-      r >= 0 && r < map.rows && c >= 0 && c < map.cols && map.tiles[r][c] === T.GRASS;
-
-    for (let r = 0; r < map.rows; r++) {
-      for (let c = 0; c < map.cols; c++) {
-        if (map.tiles[r][c] !== T.PATH) continue;
-        const x = c * TILE;
-        const y = r * TILE;
-        rt.draw(TEX.path, x, y);
-        if (isGrass(c, r - 1)) rt.draw(TEX.edge.top, x, y);
-        if (isGrass(c, r + 1)) rt.draw(TEX.edge.bottom, x, y);
-        if (isGrass(c - 1, r)) rt.draw(TEX.edge.left, x, y);
-        if (isGrass(c + 1, r)) rt.draw(TEX.edge.right, x, y);
-      }
-    }
   }
 
-  // Place buildings bottom-anchored, with a soft shadow and a footprint collision body.
-  // Depth = base Y so the player renders behind the tall roof when standing above it.
-  buildBuildings() {
-    this.solids = this.physics.add.staticGroup();
+  // Place each building with its bottom-center on the bottom-center of its anchor tile.
+  // Depth is the building's y-sort line in world space, so the rancher (whose depth is
+  // their feet) passes behind it when standing above that line and in front when below.
+  buildBuildings(manifest) {
+    const specs = buildingSpecs(manifest);
 
-    BUILDINGS.forEach((b) => {
-      const x = b.col * TILE;
-      const y = b.row * TILE;
-      const fw = b.foot.w * TILE;
-      const fh = b.foot.h * TILE;
+    BUILDINGS.forEach(({ id, anchorTile: [col, row] }) => {
+      const spec = specs[id];
+      const left = Math.round((col + 0.5) * TILE - spec.width / 2);
+      const top = (row + 1) * TILE - spec.height;
 
-      // Soft grounding shadow.
-      const shadow = this.add.ellipse(x, y - 4, fw * 1.15, fh * 1.0, COLORS.shadow, 0.16);
-      shadow.setDepth(y - 1);
+      if (spec.frontPx) {
+        // Walk-in building: a backdrop that characters inside stand in front of, with
+        // the roof and posts drawn again on top of them.
+        this.add.image(left, top, id).setOrigin(0, 0).setDepth(top + spec.backSortY);
+        spec.frontPx.forEach(([x1, y1, x2, y2]) => {
+          const front = this.add.image(left, top, id).setOrigin(0, 0);
+          front.setCrop(x1, y1, x2 - x1, y2 - y1);
+          front.setDepth(top + spec.sortY);
+        });
+      } else {
+        this.add.image(left, top, id).setOrigin(0, 0).setDepth(top + spec.sortY);
+      }
 
-      // The building sprite, anchored at its base.
-      const img = this.add.image(x, y, TEX[b.key]).setOrigin(0.5, 1);
-      img.setDepth(y);
-
-      // Invisible static body covering just the wall base (not the roof).
-      const body = this.add.rectangle(x, y - fh / 2, fw, fh);
-      body.setVisible(false);
-      this.solids.add(body);
+      spec.solidsPx.forEach(([x1, y1, x2, y2]) => {
+        this.addSolid(left + x1, top + y1, x2 - x1, y2 - y1);
+      });
     });
   }
 
-  // Wooden signposts at the path exits, each with a floating label pill (from the mockup).
+  // Wooden signposts at the road exits, each with a floating label.
   buildSigns() {
-    SIGNS.forEach((s) => {
-      const x = s.col * TILE;
-      const y = s.row * TILE;
-      const post = this.add.image(x, y, TEX.sign).setOrigin(0.5, 1);
-      post.setDepth(y);
-      const label = this.add.text(x, y - 60, s.label, {
+    this.labels = SIGNS.map(({ tile: [col, row], label }) => {
+      const x = (col + 0.5) * TILE;
+      const y = (row + 1) * TILE - 4;
+      this.add.image(x, y, TEX.sign).setOrigin(0.5, 1).setDepth(y);
+
+      const text = this.add.text(x, y - 25, label, {
         fontFamily: 'monospace',
-        fontSize: '13px',
         color: '#3b2a17',
         backgroundColor: '#f3ead6',
-        padding: { x: 8, y: 4 },
       });
-      label.setOrigin(0.5, 1);
-      label.setDepth(y + 1);
+      text.setOrigin(0.5, 1);
+      text.setDepth(y + 1);
+      return text;
     });
   }
 
-  createHud() {
-    // Fixed to the screen (scrollFactor 0) so it stays put as the camera moves.
-    const text = this.add.text(12, 10, 'Alpaca Ranch — WASD / Arrow keys to move 🦙', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#ffffff',
-      backgroundColor: 'rgba(0,0,0,0.45)',
-      padding: { x: 8, y: 5 },
+  // Keep the camera on a whole-number zoom so the pixel art stays crisp. Text is the one
+  // thing that shouldn't be blown up as chunky pixels, so labels are typeset at screen
+  // resolution and scaled back down by the zoom.
+  applyZoom() {
+    const { width, height } = this.scale.gameSize;
+    const zoom = pickZoom(width, height, WORLD_WIDTH, WORLD_HEIGHT);
+    this.cameras.main.setZoom(zoom);
+
+    this.labels.forEach((text) => {
+      text.setFontSize(LABEL_FONT_PX * zoom);
+      text.setPadding(3 * zoom, 2 * zoom);
+      text.setScale(1 / zoom);
     });
-    text.setScrollFactor(0);
-    text.setDepth(10000);
   }
 
   update() {

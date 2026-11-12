@@ -9,17 +9,18 @@ export default class Player {
   constructor(scene, tileCol, tileRow) {
     this.scene = scene;
 
-    // Place the sprite at the center of the given tile.
-    const x = tileCol * TILE + TILE / 2;
-    const y = tileRow * TILE + TILE / 2;
+    // Stand in the middle of the given tile. The sprite's origin is its feet, so its y
+    // is the ground-contact point used for depth sorting.
+    const x = (tileCol + 0.5) * TILE;
+    const y = (tileRow + 0.5) * TILE;
 
     this.sprite = scene.physics.add.sprite(x, y, TEX.player);
-    this.sprite.setOrigin(0.5, 0.5);
+    this.sprite.setOrigin(0.5, 1);
     this.sprite.setCollideWorldBounds(true);
 
-    // The physics body is a little smaller than the art and sits at the rancher's feet,
-    // so movement feels grounded and you can nudge close to walls without clipping.
-    this.sprite.body.setSize(14, 10);
+    // The physics body is a small box at the rancher's feet, so movement feels grounded
+    // and the upper body can overlap walls, roofs and shorelines.
+    this.sprite.body.setSize(8, 4);
     this.sprite.body.setOffset(3, 18);
 
     this.facing = 'down';
@@ -65,8 +66,8 @@ export default class Player {
       body.setVelocity(0, 0);
     }
 
-    // Y-sort: depth tracks the sprite's feet so the rancher passes behind building roofs
-    // when standing above them, and in front when below.
+    // Y-sort: depth is the rancher's feet, compared against each building's sort line —
+    // behind a roof when standing above it, in front when below.
     this.sprite.setDepth(this.sprite.y);
   }
 }

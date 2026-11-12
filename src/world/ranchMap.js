@@ -1,64 +1,72 @@
-// The ranch layout, as a tile grid plus building placements. The grid only distinguishes
-// walkable ground types (grass vs. dirt path) so the renderer can give the path soft,
-// grass-fringed edges. Buildings are placed as sprites (not tiles) with their own
-// collision footprints. Matches the user's mockup: open field, a cross-shaped path
-// (vertical road top<->bottom, horizontal road across), farmhouse top-left, barn
-// top-right. No perimeter fence — the ranch is open, with path exits top and bottom.
+// The ranch layout: one character per 32px tile, rows top-to-bottom (the same format as
+// the art pack's example layout). Edit the grid to reshape the ranch — the renderer and
+// collision both read straight from it.
+//
+// Layout: an open highland pasture with a cross-shaped dirt road (north exit "To ???",
+// south exit "To town"), the log cabin top-left with a walkway to its door, the run-in
+// shelter top-right on a trampled bare-ground yard, and a pond with a gravel bank
+// bottom-right. The bottom-left pasture is left open for the alpaca pen.
 
-import { WORLD_COLS, WORLD_ROWS } from '../config.js';
+import { TILE } from '../config.js';
 
-// Ground tile ids.
-export const T = {
-  GRASS: 0,
-  PATH: 1,
+// Grid character -> terrain id in assets/manifest.json.
+export const LEGEND = {
+  g: 'grass',
+  f: 'grass_flowers',
+  d: 'dirt_path',
+  b: 'bare_ground',
+  v: 'gravel',
+  w: 'water',
 };
 
-// Vertical road (the main street): a band of columns running the full height, exiting the
-// map at top ("To ??? (TBD)") and bottom ("To town").
-const ROAD_COL_MIN = 18;
-const ROAD_COL_MAX = 21;
+export const GRID = [
+  'gggggggggggggddggggggggggggg',
+  'ggggggfggggggddggfgggggggggg',
+  'gggfgggggggggddggggggggggfgg',
+  'gggggggggfgggddgggggfggggggg',
+  'gggggggggggggddggggggggggggg',
+  'fggggggggggggddggggbbbbbgfgg',
+  'ggggggggggfggddgggbbbbbbbggg',
+  'ggfgggdggggggddgggbbbbbbbggg',
+  'ggggggdgfggggddggggbbbbbgggg',
+  'dddddddddddddddddddddddddddd',
+  'dddddddddddddddddddddddddddd',
+  'ggggggggfggggddggggggggggggg',
+  'ggfggggggggggddggfggggggfggg',
+  'gggggggggggfgddggggwwwvvvggg',
+  'ggggggfggggggddgggwwwwwwvvgg',
+  'gggggggggggggddgfgwwwwwwwvgg',
+  'gggfgggggfgggddgggwwwwwwvvgg',
+  'gggggggggggggddggggwwwvvvvgg',
+  'gfgggggfgggggddggggggvvvvfgg',
+  'gggggggggggggddgfggggggggggg',
+];
 
-// Horizontal road crossing it, a few rows tall, spanning the full width.
-const ROAD_ROW_MIN = 13;
-const ROAD_ROW_MAX = 15;
+export const ROWS = GRID.length;
+export const COLS = GRID[0].length;
+export const WORLD_WIDTH = COLS * TILE;
+export const WORLD_HEIGHT = ROWS * TILE;
 
-function inRoadCol(c) {
-  return c >= ROAD_COL_MIN && c <= ROAD_COL_MAX;
-}
-function inRoadRow(r) {
-  return r >= ROAD_ROW_MIN && r <= ROAD_ROW_MAX;
-}
+// Catch layout typos early with a pointed message instead of a blank tile.
+GRID.forEach((row, r) => {
+  if (row.length !== COLS) throw new Error(`ranchMap: row ${r} is ${row.length} tiles wide, expected ${COLS}`);
+  [...row].forEach((ch, c) => {
+    if (!LEGEND[ch]) throw new Error(`ranchMap: unknown tile '${ch}' at col ${c}, row ${r}`);
+  });
+});
 
-export function buildRanch() {
-  const cols = WORLD_COLS;
-  const rows = WORLD_ROWS;
-
-  const tiles = [];
-  for (let r = 0; r < rows; r++) {
-    const row = [];
-    for (let c = 0; c < cols; c++) {
-      row.push(inRoadCol(c) || inRoadRow(r) ? T.PATH : T.GRASS);
-    }
-    tiles.push(row);
-  }
-
-  return { cols, rows, tiles };
-}
-
-// Buildings. Each is placed by its bottom-center anchor in (fractional) tile coordinates,
-// so it sits naturally on the ground just above the horizontal road. `foot` is the solid
-// collision footprint (in tiles) centered on that anchor — smaller than the sprite so the
-// player collides with the walls' base but can walk *behind* the taller roof.
+// Buildings, by manifest id. Each is placed with its bottom-center on the bottom-center
+// of `anchorTile` [col, row]; the terrain underneath stays as drawn.
 export const BUILDINGS = [
-  { key: 'farmhouse', col: 6.5, row: 11.2, foot: { w: 3.2, h: 1.4 } },
-  { key: 'barn', col: 31, row: 11.2, foot: { w: 4.4, h: 1.4 } },
+  { id: 'cabin', anchorTile: [6, 6] }, // door lines up with the walkway in col 6
+  { id: 'run_in_shelter', anchorTile: [21, 6] }, // open front faces the yard + road
 ];
 
-// Wooden signposts at the two path exits, with the labels from the mockup.
+// Wooden signposts beside the two road exits. Each stands on the bottom-center of `tile`.
 export const SIGNS = [
-  { col: 22.6, row: 2.4, label: 'To ??? (TBD)' },
-  { col: 22.6, row: 27.6, label: 'To town' },
+  { tile: [15, 1], label: 'To ??? (TBD)' },
+  { tile: [15, 18], label: 'To town' },
 ];
 
-// Player starts on the main road, just below the crossroads and clear of the buildings.
-export const SPAWN = { col: 19.5, row: 19 };
+// The rancher starts at the crossroads, with the cabin and the shelter both in view.
+export const SPAWN = { tile: [13, 10] };

@@ -1,0 +1,102 @@
+{
+  "name": "alpaca-farm-world",
+  "description": "Andes-inspired pixel-art world assets for an alpaca farming sim: terrain tiles, the farmhouse (log cabin), and the barn (open run-in shelter).",
+  "version": "1.0.0",
+  "units": "pixels",
+  "tileSize": 32,
+
+  "art": {
+    "style": "pixel-art",
+    "scaleMode": "nearest",
+    "comment_scaleMode": "Never smooth/bilinear-filter these. Disable image smoothing and scale by whole integers only (2x, 3x, 4x).",
+    "recommendedIntegerZoom": [2, 3, 4],
+    "terrainBackgrounds": "opaque (full-bleed, meant to fill the ground grid)",
+    "buildingBackgrounds": "transparent RGBA; a soft contact shadow is baked into the base of each building"
+  },
+
+  "terrain": {
+    "comment": "All terrain tiles are 32x32 and designed to tile seamlessly on all four edges (features wrap across edges). Lay them on a grid in any pattern. 'grass' is the default ground; 'grass_flowers' is a decorative variant to sprinkle in so large fields aren't uniform.",
+    "tiles": [
+      { "id": "grass",         "file": "assets/terrain/grass.png",         "size": [32, 32], "tileable": true, "walkable": true,  "notes": "Base highland (puna) grassland. Default ground." },
+      { "id": "grass_flowers", "file": "assets/terrain/grass_flowers.png",  "size": [32, 32], "tileable": true, "walkable": true,  "notes": "Grass variant with ichu tufts + tiny wildflowers. Use sparsely for variety." },
+      { "id": "dirt_path",     "file": "assets/terrain/dirt_path.png",      "size": [32, 32], "tileable": true, "walkable": true,  "notes": "Compacted pebbly path. Good for walkways." },
+      { "id": "bare_ground",   "file": "assets/terrain/bare_ground.png",    "size": [32, 32], "tileable": true, "walkable": true,  "notes": "Rougher open earth / trampled ground." },
+      { "id": "gravel",        "file": "assets/terrain/gravel.png",         "size": [32, 32], "tileable": true, "walkable": true,  "notes": "Rocky gravel. Mine for stone later if desired." },
+      { "id": "water",         "file": "assets/terrain/water.png",          "size": [32, 32], "tileable": true, "walkable": false, "notes": "Cold glacial water (still). Non-walkable. Can be animated later with ripple frames." }
+    ]
+  },
+
+  "buildings": {
+    "comment": "Placement convention: position each building by its 'anchor' (bottom-center) on the bottom-center of a target tile, rather than snapping the whole image to the grid. Use 'ySortLineY' as the depth key so characters/alpacas sort in front of or behind the building. Collision rects are in IMAGE pixel coordinates (origin top-left of the PNG) and are sensible starting points to tune in-engine.",
+    "list": [
+      {
+        "id": "cabin",
+        "role": "house",
+        "file": "assets/buildings/cabin.png",
+        "size": [64, 64],
+        "visualFootprintTiles": [2, 2],
+        "anchor": "bottom-center",
+        "baselineY": 59,
+        "solidBoundsPx": [5, 4, 59, 59],
+        "ySortLineY": 59,
+        "collision": {
+          "type": "rect",
+          "rectPx": [8, 27, 57, 59],
+          "notes": "Walls + stone foundation. The roof (above ~y27) is intentionally left non-blocking so characters can y-sort behind the roof. Tune to taste."
+        },
+        "notes": "Log cabin farmhouse. 2x2 tiles. Green shingled roof, stone chimney, glowing windows. Soft contact shadow baked at the base (bottom ~4px, semi-transparent)."
+      },
+      {
+        "id": "run_in_shelter",
+        "role": "barn",
+        "file": "assets/buildings/run_in_shelter.png",
+        "size": [72, 50],
+        "visualFootprintTiles": [3, 2],
+        "comment_visualFootprint": "72px wide = 2.25 tiles; the roof overhang spills into a 3rd column but is purely visual. The solid ground footprint is ~2 tiles wide x 1 tile deep.",
+        "anchor": "bottom-center",
+        "baselineY": 49,
+        "solidBoundsPx": [4, 4, 68, 49],
+        "ySortLineY": 49,
+        "openFront": true,
+        "collision": {
+          "type": "rects",
+          "comment": "OPEN-FRONT structure: alpacas walk IN from the front (bottom) and stand on the straw floor under the roof. Only the two side posts and the back block them; the central interior floor is walkable. These rects are approximate starting points — verify in-engine.",
+          "rectsPx": [
+            [8,  14, 18, 49],
+            [54, 14, 64, 49],
+            [8,  14, 64, 21]
+          ],
+          "walkableInteriorPx": [19, 22, 53, 49],
+          "notes": "rectsPx = [left post column], [right post column], [back wall strip]. walkableInteriorPx = the open floor where an alpaca can stand sheltered."
+        },
+        "notes": "Three-sided open run-in shelter (the 'barn'). Wood posts, shaded interior, two hay bales, straw bedding, a small lantern. Roof overhangs the walls, so the sprite is visually wider than its ground footprint."
+      }
+    ]
+  },
+
+  "palette": {
+    "comment": "Core colors used across these assets (hex). Handy for matching UI, particles, or procedural tints to the art.",
+    "grass_base": "#859d5c", "grass_dark": "#6f8a4a", "grass_dry": "#b9ac6f",
+    "wood_light": "#c48f52", "wood": "#b07a3e", "wood_dark": "#8a5d2c", "wood_seam": "#5a3619",
+    "roof_green": "#3f6b3a", "roof_green_dark": "#2f5230", "roof_green_light": "#4f7d47",
+    "stone": "#8a8d94", "stone_dark": "#6f7379", "stone_light": "#a6aab1", "mortar": "#5c5f66",
+    "window_warm": "#f4d37a",
+    "water": "#539bab", "water_light": "#7ebdc9", "water_dark": "#3f8596",
+    "dirt_path": "#a9855c", "bare_ground": "#8f6f48", "gravel": "#96968c",
+    "outline_building": "#7a6f62"
+  },
+
+  "rendering": {
+    "notes": [
+      "Target tile grid is 32x32. Build the ground as a tilemap layer from the terrain tiles.",
+      "Draw buildings on an 'objects' layer above the ground, sorted by ySortLineY (and by the feet-Y of moving entities) so depth reads correctly.",
+      "Disable texture smoothing globally; use nearest-neighbor and integer camera zoom to keep pixels crisp.",
+      "Water is the only non-walkable terrain here. Building collision is defined per-building above.",
+      "The run_in_shelter is open-front: its interior floor is walkable; honor that for the alpaca-shelter mechanic."
+    ]
+  },
+
+  "notScopedYet": {
+    "comment": "This package is terrain + house + barn, as requested. Other finished assets exist and can be packaged the same way on request: fence kit (front rail, side rail, 4 corner posts), the Huacaya alpaca (idle/walk, 3 fleece stages + cria), and the 6 tool icons."
+  }
+}
