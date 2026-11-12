@@ -1,10 +1,13 @@
 // Turns the art pack's building entries (assets/manifest.json) into what the scene needs
-// to place them: size, depth-sort line, and solid rectangles. All rectangles are
-// [x1, y1, x2, y2] in image pixels, origin at the PNG's top-left.
+// to place them: size, depth-sort line, and solid rectangles. The manifest (and TUNING
+// below) speak in image pixels — rectangles are [x1, y1, x2, y2], origin at the PNG's
+// top-left — and buildingSpecs() converts them to world pixels at BUILDING_SCALE.
 //
 // The manifest is the source of truth; TUNING holds only in-engine adjustments (the pack
 // calls its collision numbers "starting points — tune in-engine"), kept here so a fresh
 // art drop can overwrite the manifest without losing them.
+
+import { BUILDING_SCALE } from '../config.js';
 
 const TUNING = {
   run_in_shelter: {
@@ -31,16 +34,23 @@ const TUNING = {
 };
 
 export function buildingSpecs(manifest) {
+  const k = BUILDING_SCALE;
   const specs = {};
   manifest.buildings.list.forEach((b) => {
     const { collision } = b;
+    const tune = TUNING[b.id] || {};
+    const solidsPx = tune.solidsPx || collision.rectsPx || [collision.rectPx];
     specs[b.id] = {
       id: b.id,
-      width: b.size[0],
-      height: b.size[1],
-      sortY: b.ySortLineY,
-      solidsPx: collision.rectsPx || [collision.rectPx],
-      ...TUNING[b.id],
+      scale: k,
+      // World pixels, relative to the placed sprite's top-left:
+      width: b.size[0] * k,
+      height: b.size[1] * k,
+      sortY: b.ySortLineY * k,
+      solids: solidsPx.map((rect) => rect.map((v) => v * k)),
+      backSortY: tune.backSortY === undefined ? undefined : tune.backSortY * k,
+      // Image pixels (these are crops of the texture itself):
+      frontPx: tune.frontPx,
     };
   });
   return specs;

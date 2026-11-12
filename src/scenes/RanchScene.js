@@ -92,21 +92,23 @@ export default class RanchScene extends Phaser.Scene {
       const spec = specs[id];
       const left = Math.round((col + 0.5) * TILE - spec.width / 2);
       const top = (row + 1) * TILE - spec.height;
+      const draw = (sortY) => this.add.image(left, top, id)
+        .setOrigin(0, 0)
+        .setScale(spec.scale)
+        .setDepth(top + sortY);
 
       if (spec.frontPx) {
         // Walk-in building: a backdrop that characters inside stand in front of, with
         // the roof and posts drawn again on top of them.
-        this.add.image(left, top, id).setOrigin(0, 0).setDepth(top + spec.backSortY);
+        draw(spec.backSortY);
         spec.frontPx.forEach(([x1, y1, x2, y2]) => {
-          const front = this.add.image(left, top, id).setOrigin(0, 0);
-          front.setCrop(x1, y1, x2 - x1, y2 - y1);
-          front.setDepth(top + spec.sortY);
+          draw(spec.sortY).setCrop(x1, y1, x2 - x1, y2 - y1);
         });
       } else {
-        this.add.image(left, top, id).setOrigin(0, 0).setDepth(top + spec.sortY);
+        draw(spec.sortY);
       }
 
-      spec.solidsPx.forEach(([x1, y1, x2, y2]) => {
+      spec.solids.forEach(([x1, y1, x2, y2]) => {
         this.addSolid(left + x1, top + y1, x2 - x1, y2 - y1);
       });
     });

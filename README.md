@@ -32,13 +32,15 @@ Then open **http://localhost:8000** in your browser.
 
 ## What's here (v0.3)
 
-- A 28×20-tile ranch built from the art pack's six terrain tiles: puna grass with
+- A 32×22-tile ranch built from the art pack's six terrain tiles: puna grass with
   sparse wildflowers, a cross-shaped dirt road (signposted **To town** ↓ and
   **To ??? (TBD)** ↑), a bare-ground yard, a gravel bank and a **pond you can't walk into**.
 - The **cabin** (top-left, with a walkway to its door) and the **run-in shelter**
   (top-right). The shelter's front is open: walk in and stand on the straw under the roof.
 - A rancher you walk around in all directions, with a camera that follows you.
 - Depth-sorted buildings: you walk **behind** roofs and posts and collide only with walls.
+- Buildings are drawn at 2× their PNG size (`BUILDING_SCALE` in `src/config.js`) so they
+  are in proportion to the rancher.
 - Crisp pixels at any window size — the camera only ever zooms by whole numbers (2×–4×).
 
 ## How it's built
@@ -69,7 +71,7 @@ assets/
   buildings/          # cabin.png (house), run_in_shelter.png (barn)
 src/
   main.js             # Phaser config + scene registration
-  config.js           # tile size, speed, integer-zoom rule, placeholder palette
+  config.js           # tile size, building scale, speed, zoom rule, placeholder palette
   scenes/
     BootScene.js      # loads the art pack; draws the placeholder rancher + signpost
     RanchScene.js     # ground, buildings, collision, depth sorting, camera

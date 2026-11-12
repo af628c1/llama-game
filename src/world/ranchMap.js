@@ -20,26 +20,28 @@ export const LEGEND = {
 };
 
 export const GRID = [
-  'gggggggggggggddggggggggggggg',
-  'ggggggfggggggddggfgggggggggg',
-  'gggfgggggggggddggggggggggfgg',
-  'gggggggggfgggddgggggfggggggg',
-  'gggggggggggggddggggggggggggg',
-  'fggggggggggggddggggbbbbbgfgg',
-  'ggggggggggfggddgggbbbbbbbggg',
-  'ggfgggdggggggddgggbbbbbbbggg',
-  'ggggggdgfggggddggggbbbbbgggg',
-  'dddddddddddddddddddddddddddd',
-  'dddddddddddddddddddddddddddd',
-  'ggggggggfggggddggggggggggggg',
-  'ggfggggggggggddggfggggggfggg',
-  'gggggggggggfgddggggwwwvvvggg',
-  'ggggggfggggggddgggwwwwwwvvgg',
-  'gggggggggggggddgfgwwwwwwwvgg',
-  'gggfgggggfgggddgggwwwwwwvvgg',
-  'gggggggggggggddggggwwwvvvvgg',
-  'gfgggggfgggggddggggggvvvvfgg',
-  'gggggggggggggddgfggggggggggg',
+  'ggggfggggggggggddgggggggfggggggg',
+  'fggggggggggggggddgggggggggggfggg',
+  'gggggggggggggggddgggggfggggggggg',
+  'gggggggggggggggddggfggggggfggggg',
+  'gggggfggggggfggddggggggggggggggg',
+  'gggggggggggggggddgggbbbbbgggggfg',
+  'gggfgggggggggggddggbbbbbbbgggggg',
+  'gggggggggggggggddggbbbbbbbgggggg',
+  'ggggggggdgggggfddggbbbbbbbgggggg',
+  'ggggggggdggggggddgggbbbbbggggggg',
+  'dddddddddddddddddddddddddddddddd',
+  'dddddddddddddddddddddddddddddddd',
+  'gggggggggggggggddgfgggggggfggggg',
+  'gggggggggggfgggddggggggggggggggf',
+  'gggggggggggggggddggggwwwvvvggggg',
+  'gggfgggggggggggddgggwwwwwwvvgggg',
+  'ggggggggfgggfggddgggwwwwwwwvgggg',
+  'gfgggggggggggggddgggwwwwwwvvgggg',
+  'ggggfggggggfgggddggggwwwvvvvgggg',
+  'gggggggggggggggddggggggvvvvggggg',
+  'gggggggggggggggddgggggggggfggggg',
+  'gggggggggggggggddgggfggggggggggf',
 ];
 
 export const ROWS = GRID.length;
@@ -56,17 +58,18 @@ GRID.forEach((row, r) => {
 });
 
 // Buildings, by manifest id. Each is placed with its bottom-center on the bottom-center
-// of `anchorTile` [col, row]; the terrain underneath stays as drawn.
+// of `anchorTile` [col, row]; the terrain underneath stays as drawn. They are drawn at
+// BUILDING_SCALE (config.js), so the cabin covers about 4x4 tiles and the shelter 4.5x3.
 export const BUILDINGS = [
-  { id: 'cabin', anchorTile: [6, 6] }, // door lines up with the walkway in col 6
-  { id: 'run_in_shelter', anchorTile: [21, 6] }, // open front faces the yard + road
+  { id: 'cabin', anchorTile: [8, 8] }, // the walkway in col 8 starts at its doorstep
+  { id: 'run_in_shelter', anchorTile: [22, 8] }, // open front faces the yard + road
 ];
 
 // Wooden signposts beside the two road exits. Each stands on the bottom-center of `tile`.
 export const SIGNS = [
-  { tile: [15, 1], label: 'To ??? (TBD)' },
-  { tile: [15, 18], label: 'To town' },
+  { tile: [17, 1], label: 'To ??? (TBD)' },
+  { tile: [17, 20], label: 'To town' },
 ];
 
 // The rancher starts at the crossroads, with the cabin and the shelter both in view.
-export const SPAWN = { tile: [13, 10] };
+export const SPAWN = { tile: [15, 10] };
