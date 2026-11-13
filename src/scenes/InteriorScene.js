@@ -6,8 +6,8 @@
 //
 // Room pixels are world pixels here: the room's top-left is the world's origin.
 
-import { INTERIOR_CHARACTER, PLAYER_SPEED, FADE } from '../config.js';
-import { interiorKey, interiorTex } from '../world/interiors.js';
+import { INTERIOR_CHARACTER, HOME_INTERIOR, PLAYER_SPEED, FADE } from '../config.js';
+import { interiorKey, interiorTex, interiorStateTex } from '../world/interiors.js';
 import { boxFromRect, bodyOverlaps } from '../world/rects.js';
 import Player from '../entities/Player.js';
 
@@ -18,6 +18,7 @@ export default class InteriorScene extends Phaser.Scene {
 
   create({ id, wake }) {
     const spec = this.cache.json.get(interiorKey(id));
+    this.id = id;
     this.spec = spec;
     this.clock = this.registry.get('time');
     [this.roomW, this.roomH] = spec.room.size;
@@ -29,7 +30,7 @@ export default class InteriorScene extends Phaser.Scene {
 
     this.buildRoom(id, spec);
 
-    // Arrive just inside the door — or, waking up, beside the bed.
+    // Arrive just inside the way in — or, waking up, beside the bed.
     const { feet: [x, y], facing } = wake ? this.bedside() : spec.spawns.fromFarm;
     this.player = new Player(this, x, y, {
       scale: INTERIOR_CHARACTER.scale,
@@ -47,12 +48,17 @@ export default class InteriorScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.scale.off('resize', this.fitCamera, this));
   }
 
-  // Draw the room in the spec's layer order. Every layer before 'ySorted' sits behind all
-  // characters; ySorted furniture is depth-sorted against the rancher's feet, so the
-  // rancher can walk behind the table and in front of it.
+  // Draw the room in the spec's layer order. Layers before 'ySorted' sit behind all
+  // characters and layers after it (the shed's night tint) in front of them; ySorted
+  // furniture is depth-sorted against the rancher's feet, so the rancher can walk behind
+  // the table and in front of it.
   buildRoom(id, spec) {
     const { drawOrder } = spec;
-    const layerDepth = (layer) => drawOrder.indexOf(layer) - drawOrder.length; // all < 0
+    const sortedAt = drawOrder.indexOf('ySorted');
+    const layerDepth = (layer) => {
+      const i = drawOrder.indexOf(layer);
+      return i < sortedAt ? i - sortedAt : 1e5 + i; // ySorted depths are y: 0..room height
+    };
 
     this.add.image(0, 0, interiorTex(id, 'room')).setOrigin(0, 0).setDepth(layerDepth('base'));
 
@@ -60,12 +66,17 @@ export default class InteriorScene extends Phaser.Scene {
     // entry here (the calendar's, for now) aren't clickable yet.
     const actions = { sleep: () => this.askToSleep() };
     this.nightOnly = []; // objects that only show after dark (the window's night view)
+    this.stateful = {}; // objects that look different by state, by object id
 
     spec.objects.forEach((o) => {
       const key = interiorTex(id, o.id);
       const [x, y] = o.pos;
       let obj;
-      if (o.frames) {
+      if (o.states) {
+        obj = this.add.image(x, y);
+        this.stateful[o.id] = { obj, states: o.states };
+        this.setObjectState(o.id, o.defaultState);
+      } else if (o.frames) {
         if (!this.anims.exists(key)) {
           this.anims.create({
             key,
@@ -100,6 +111,15 @@ export default class InteriorScene extends Phaser.Scene {
     });
   }
 
+  // Show one of an object's states (the trough 'empty' or 'full', the dung pile '0'–'2').
+  // A state with no image shows nothing.
+  setObjectState(objectId, state) {
+    const { obj, states } = this.stateful[objectId];
+    const hasImage = Boolean(states[state]);
+    if (hasImage) obj.setTexture(interiorStateTex(this.id, objectId, state));
+    obj.setVisible(hasImage);
+  }
+
   // An invisible static body covering one of the spec's rectangles.
   addSolid(rect) {
     const { x, y, w, h } = boxFromRect(rect);
@@ -123,10 +143,14 @@ export default class InteriorScene extends Phaser.Scene {
   }
 
   // Fade out, let the night pass (the new day's weather comes in here), and fade back in
-  // on the rancher standing by the bed.
+  // on the rancher standing by the bed — which, from any other building, means at home.
   sleepUntilMorning() {
     this.scene.get('Hud').fadeThrough(() => {
       this.clock.sleep();
+      if (this.id !== HOME_INTERIOR) {
+        this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
+        return;
+      }
       const { feet: [x, y], facing } = this.bedside();
       this.player.placeAt(x, y);
       this.player.facing = facing;

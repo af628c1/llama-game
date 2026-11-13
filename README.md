@@ -3,12 +3,12 @@
 A 2D ranching game inspired by Stardew Valley, Harvest Moon, and Story of Seasons —
 except you're not a farmer, you're an **alpaca rancher**.
 
-This is **v0.5: days and weather**. Explore an open highland ranch — a grassy pasture
-with a cross-shaped dirt road, a **log-cabin farmhouse** you can walk into and sleep in,
-an open **run-in shelter** (the barn) on its trampled yard, and a pond with a gravel bank
-— all drawn from the Andes-inspired art pack in `assets/`. A clock, a calendar and daily
-weather now run in the top-right corner. Alpacas, the pen, garden, chores and the economy
-are coming next (see the roadmap below).
+This is **v0.6: inside the barn**. Explore an open highland ranch — a grassy pasture with
+a cross-shaped dirt road, a **log-cabin farmhouse** you can walk into and sleep in, an
+open **run-in shelter** (the barn) with its alpaca shed inside, and a pond with a gravel
+bank — all drawn from the Andes-inspired art pack in `assets/`. A clock, a calendar and
+daily weather run in the top-right corner. Alpacas, the pen, garden, chores and the
+economy are coming next (see the roadmap below).
 
 ## Play it
 
@@ -31,10 +31,10 @@ Then open **http://localhost:8000** in your browser.
 | ------------ | ----------------------------- |
 | Move         | `WASD` or Arrows              |
 | Jump         | `Space`                       |
-| Enter / exit | Walk into the cabin's doorway |
+| Enter / exit | Walk into the cabin's doorway or the shelter's open front |
 | Sleep        | Click the bed, then **Yes**   |
 
-## What's here (v0.5)
+## What's here (v0.6)
 
 - A 32×22-tile ranch built from the art pack's six terrain tiles: puna grass with
   sparse wildflowers, a cross-shaped dirt road (signposted **To town** ↓ and
@@ -52,6 +52,10 @@ Then open **http://localhost:8000** in your browser.
 - Depth-sorted buildings: you walk **behind** roofs and posts and collide only with walls.
 - Buildings are drawn at 1.5× their PNG size (`BUILDING_SCALE` in `src/config.js`) so
   they are in proportion to the rancher.
+- **The shed's interior.** Walk up into the shelter's open front and the same fade takes
+  you inside: hay stack, bale, broom, water basin and feed trough are solid and
+  depth-sorted, the lantern flickers, and at night the shed darkens around its glow. Walk
+  down onto the grass to leave.
 - **Time and weather.** The board in the top-right corner shows the weekday and date,
   the year, the clock, today's weather and any festival or birthday. A day starts at
   6:00 am and moves 10 minutes every 7 seconds; a year is four 30-day seasons. Each day is
@@ -73,8 +77,10 @@ Then open **http://localhost:8000** in your browser.
   the manifest. See `assets/README.md` for the pack's conventions.
 - **Interiors are data-driven too.** `assets/cabin_interior.json` describes the room: its
   images and draw order, what is solid, where you arrive, the exit, and where the door is
-  on the building outside. `InteriorScene` builds any room from such a file; register new
-  ones in `INTERIORS` in `src/config.js`. See `assets/CABIN_INTERIOR.md`.
+  on the building outside. `InteriorScene` builds any room from such a file — the cabin
+  and the shed (`assets/shed_interior.json`) are the same code — so a new room is one line
+  in `INTERIORS` in `src/config.js`. See `assets/CABIN_INTERIOR.md` and
+  `assets/SHED_INTERIOR.md`.
 - **The HUD is the pack's too.** `assets/time_weather_hud.json` gives the board's art,
   fonts, text positions and colours, and the list of festivals and birthdays
   (`assets/TIME_WEATHER_HUD.md`). The board matches the pack's reference renders pixel for
@@ -99,10 +105,12 @@ lib/phaser.min.js     # vendored Phaser 3
 assets/
   manifest.json       # the art pack's spec: sizes, walkability, collision, palette
   cabin_interior.json # the cabin's room: layers, collision, spawn, exit, door link
+  shed_interior.json  # the shed's room, same format, plus per-state images
   time_weather_hud.json # the HUD board: art, fonts, text layout, events list
   terrain/            # six seamless 32×32 ground tiles
   buildings/          # cabin.png (house), run_in_shelter.png (barn)
   interiors/cabin/    # room, furniture, decor and the fire strip
+  interiors/shed/     # room, props, trough/basin/dung states, lantern, night tint
   ui/hud/             # the board, weather icons, event icons
   ui/fonts/           # Kantu + Kantu Small pixel fonts (bitmap and TTF)
   reference/          # the pack's 1× pictures of how things should look
@@ -135,7 +143,8 @@ src/
 - [ ] ☀️ Day/night lighting + player energy
 - [ ] 🎒 Inventory + a shop to buy feed and sell wool
 - [x] 🎨 Real pixel art for terrain, the house and the barn
-- [x] 🏠 Walk into the cabin
+- [x] 🏠 Walk into the cabin and the shed
+- [ ] 🧹 Shed chores: take hay, fill the feeder and the water, clear the dung
 - [x] 🛏️ Sleep in the bed
 - [x] 🗓️ Clock, calendar and daily weather (HUD)
 - [ ] 🌧️ Weather you can see (rain, overcast light) and what it does

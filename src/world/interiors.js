@@ -4,3 +4,7 @@
 
 export const interiorKey = (id) => `interior:${id}`; // the spec, in the JSON cache
 export const interiorTex = (id, part) => `interior:${id}:${part}`; // 'room' or an object id
+
+// An object that looks different by state (a trough that is empty or full) has one image
+// per state.
+export const interiorStateTex = (id, objectId, state) => interiorTex(id, `${objectId}:${state}`);

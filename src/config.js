@@ -70,6 +70,7 @@ export const HOME_INTERIOR = 'cabin';
 // `exteriorLink.building` says which building's door leads to it.
 export const INTERIORS = {
   cabin: 'assets/cabin_interior.json',
+  shed: 'assets/shed_interior.json',
 };
 
 // Interior art is drawn for a rancher about one tile wide and 1.4 tall — twice the size

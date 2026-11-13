@@ -11,7 +11,7 @@
 // sprites arrive, swap a bake for this.load.image(<same TEX key>, ...).
 
 import { ASSET_MANIFEST, INTERIORS, HUD_SPEC, COLORS, TEX } from '../config.js';
-import { interiorKey, interiorTex } from '../world/interiors.js';
+import { interiorKey, interiorTex, interiorStateTex } from '../world/interiors.js';
 import { HUD_TEX } from '../ui/TimePanel.js';
 import TimeState from '../state/TimeState.js';
 
@@ -35,8 +35,13 @@ export default class BootScene extends Phaser.Scene {
       this.load.once(`filecomplete-json-${key}`, (k, type, spec) => {
         this.load.image(interiorTex(id, 'room'), spec.room.file);
         spec.objects.forEach((o) => {
-          if (o.frameSize) {
-            // An animation strip (the fire): equal frames side by side.
+          if (o.states) {
+            // One image per state; a state with no image draws nothing.
+            Object.entries(o.states).forEach(([state, file]) => {
+              if (file) this.load.image(interiorStateTex(id, o.id, state), file);
+            });
+          } else if (o.frameSize) {
+            // An animation strip (the fire, the lantern): equal frames side by side.
             const [frameWidth, frameHeight] = o.frameSize;
             this.load.spritesheet(interiorTex(id, o.id), o.file, { frameWidth, frameHeight });
           } else {

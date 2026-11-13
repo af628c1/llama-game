@@ -1,0 +1,268 @@
+{
+  "name": "shed_interior",
+  "description": "Starter alpaca shed interior: inside of the open-front run-in shelter (assets/buildings/run_in_shelter.png). Top-down 3/4 view; same palette, 32px grid and rules as manifest.json and cabin_interior.json.",
+  "version": "1.0.0",
+  "units": "pixels",
+  "tileSize": 32,
+  "coords": "ROOM pixel coords: origin = top-left of room_base.png. Rects are [x0, y0, x1, y1] inclusive. Sprites are drawn with their top-left at 'pos'.",
+  "art": {
+    "scaleMode": "nearest",
+    "comment": "Smoothing off, integer zoom only. Sprites are transparent RGBA; contact shadows, the lantern glow and the night tint are semi-transparent pixels (normal alpha blending).",
+    "sceneClearColor": "#1b1714",
+    "intendedCharacterScale": "Same as the cabin: farmer ~1 tile wide, ~1.4 tiles tall. Alpacas use the existing Huacaya frames (25x34, feet at bottom-centre)."
+  },
+  "room": {
+    "file": "assets/interiors/shed/room_base.png",
+    "size": [288, 256],
+    "sizeTiles": [9, 8],
+    "floorRect": [32, 64, 255, 191],
+    "floorTiles": {
+      "originTile": [1, 2],
+      "sizeTiles": [7, 4]
+    },
+    "openFront": {
+      "thresholdRect": [34, 192, 253, 243],
+      "sunEdgeY": 207,
+      "notes": "No front wall, matching the exterior. Below the floor is the eave (shade) and a strip of sunlit paddock; walking down into the grass exits."
+    },
+    "notes": "Plank back wall with posts, straw bedding over packed earth, corner posts at the open front. Transparent outside the walls and below the grass strip. Room is smaller than most viewports: centre it, no scrolling."
+  },
+  "drawOrder": [
+    "base",
+    "floorDecal",
+    "wallDecor",
+    "lantern",
+    "ySorted",
+    "nightOverlay"
+  ],
+  "drawOrderNotes": "ySorted = props + player + alpacas, sorted each frame by ySortLineY (props) vs feet Y (characters). nightOverlay is the only layer above characters.",
+  "objects": [
+    {
+      "id": "hay_stack",
+      "layer": "ySorted",
+      "file": "assets/interiors/shed/hay_stack.png",
+      "size": [64, 34],
+      "pos": [36, 48],
+      "ySortLineY": 80,
+      "collision": [36, 64, 99, 80],
+      "interact": {
+        "action": "take_hay",
+        "zones": [
+          [36, 81, 99, 96]
+        ],
+        "facing": "up"
+      },
+      "notes": "Three twine-bound bales (same look as the bales seen in the exterior). Starter hay supply."
+    },
+    {
+      "id": "hay_bale",
+      "layer": "ySorted",
+      "file": "assets/interiors/shed/hay_bale.png",
+      "size": [45, 20],
+      "pos": [154, 66],
+      "ySortLineY": 84,
+      "collision": [154, 64, 197, 84],
+      "notes": "Single bale with a pulled-off flake beside it. Decor."
+    },
+    {
+      "id": "broom",
+      "layer": "ySorted",
+      "file": "assets/interiors/shed/broom.png",
+      "size": [20, 68],
+      "pos": [203, 21],
+      "ySortLineY": 86,
+      "collision": [203, 79, 217, 86],
+      "notes": "Ichu-grass broom leaning on the back wall. Decor (shadow on the wall is baked in)."
+    },
+    {
+      "id": "water_basin",
+      "layer": "ySorted",
+      "size": [43, 23],
+      "pos": [37, 131],
+      "states": {
+        "empty": "assets/interiors/shed/water_basin_empty.png",
+        "full": "assets/interiors/shed/water_basin_full.png"
+      },
+      "defaultState": "full",
+      "ySortLineY": 151,
+      "collision": [36, 133, 79, 151],
+      "interact": {
+        "action": "fill_water",
+        "zones": [
+          [80, 130, 96, 152],
+          [36, 152, 79, 166]
+        ]
+      },
+      "notes": "Carved stone basin. Swap the file by state (same pos/size)."
+    },
+    {
+      "id": "feed_trough",
+      "layer": "ySorted",
+      "size": [98, 28],
+      "pos": [96, 166],
+      "states": {
+        "empty": "assets/interiors/shed/feed_trough_empty.png",
+        "full": "assets/interiors/shed/feed_trough_full.png"
+      },
+      "defaultState": "empty",
+      "ySortLineY": 191,
+      "collision": [96, 175, 191, 191],
+      "interact": {
+        "action": "fill_feeder",
+        "zones": [
+          [96, 192, 191, 208]
+        ],
+        "facing": "up"
+      },
+      "notes": "Wooden feed trough at the open front, like the exterior. Player fills it from outside; alpacas eat from behind it (herd.eatSpots)."
+    },
+    {
+      "id": "dung_pile",
+      "layer": "floorDecal",
+      "size": [31, 18],
+      "pos": [222, 72],
+      "states": {
+        "0": null,
+        "1": "assets/interiors/shed/dung_pile_1.png",
+        "2": "assets/interiors/shed/dung_pile_2.png"
+      },
+      "defaultState": "0",
+      "interact": {
+        "action": "clear_dung",
+        "tool": "pitchfork",
+        "zones": [
+          [212, 66, 255, 104]
+        ],
+        "whenStateAbove": "0"
+      },
+      "stateRule": "+1 each morning after the herd slept inside (max 2). clear_dung sets it to 0 and gives fertilizer (1 per stage).",
+      "notes": "Alpacas really do share one dung pile. Walkable; state 0 draws nothing."
+    },
+    {
+      "id": "salt_lick",
+      "layer": "wallDecor",
+      "file": "assets/interiors/shed/salt_lick.png",
+      "size": [16, 16],
+      "pos": [163, 34],
+      "notes": "Pink Maras salt lick on a small wall tray. Decor."
+    },
+    {
+      "id": "halter_peg",
+      "layer": "wallDecor",
+      "file": "assets/interiors/shed/halter_peg.png",
+      "size": [13, 40],
+      "pos": [142, 23],
+      "notes": "Woven halter in aguayo colours + alpaca-wool lead with a pompom, on a peg on the centre post. Decor."
+    },
+    {
+      "id": "lantern",
+      "layer": "lantern",
+      "file": "assets/interiors/shed/lantern.png",
+      "size": [124, 29],
+      "pos": [51, 11],
+      "frameSize": [31, 29],
+      "frames": 4,
+      "frameMs": 160,
+      "loop": true,
+      "notes": "Horizontal strip, 4 frames. Flame flicker + soft glow on the boards baked in (semi-transparent)."
+    },
+    {
+      "id": "night_tint",
+      "layer": "nightOverlay",
+      "file": "assets/interiors/shed/night_tint.png",
+      "size": [270, 249],
+      "pos": [8, 0],
+      "when": "night",
+      "notes": "Draw LAST, over characters too. Darkens the shed and the paddock; clear around the lantern so it stays lit."
+    }
+  ],
+  "collision": {
+    "walls": [
+      [0, 0, 287, 65],
+      [0, 0, 31, 191],
+      [256, 0, 287, 191],
+      [0, 182, 33, 255],
+      [254, 182, 287, 255],
+      [0, 244, 287, 255]
+    ],
+    "notes": "Solid = walls + each object's 'collision'. walls[3..5] keep characters inside the open front (between the posts, above the bottom edge). Use a small feet hitbox for the player (~14x6) and alpacas (~16x6)."
+  },
+  "walkableGrid": {
+    "comment": "Tile-level approximation (9x8) for pathfinding/AI. '.' walkable, '#' blocked, 'D' exit. Use the rects for actual movement.",
+    "rows": [
+      "#########",
+      "#########",
+      "#.#..#..#",
+      "#.......#",
+      "##......#",
+      "#..###..#",
+      "#.......#",
+      "#DDDDDDD#"
+    ]
+  },
+  "spawns": {
+    "fromFarm": {"feet": [144, 214], "facing": "up"}
+  },
+  "exits": [
+    {
+      "id": "open_front",
+      "trigger": [34, 230, 253, 243],
+      "fireWhen": "player feet hitbox overlaps trigger while moving down",
+      "to": {
+        "scene": "farm",
+        "building": "run_in_shelter",
+        "spawn": "exteriorLink.exitSpawnFeet",
+        "facing": "down"
+      }
+    }
+  ],
+  "exteriorLink": {
+    "building": "run_in_shelter",
+    "comment": "Coords are in run_in_shelter.png pixels (72x50). World = shelter sprite's placed top-left + these values.",
+    "openingRect": [19, 22, 53, 49],
+    "entryTrigger": [19, 42, 53, 47],
+    "enterWhen": "player feet hitbox overlaps entryTrigger while moving up (or action button while facing up)",
+    "exitSpawnFeet": [36, 60],
+    "exitFacing": "down",
+    "notes": "Player only. Alpacas on the farm map can still walk onto walkableInteriorPx (manifest.json) to stand under the roof."
+  },
+  "herd": {
+    "capacity": 4,
+    "spriteFrame": [25, 34],
+    "feetHitbox": [16, 6],
+    "restSpots": [
+      {"feet": [104, 124], "facing": "down"},
+      {"feet": [178, 110], "facing": "down"},
+      {"feet": [150, 142], "facing": "down"},
+      {"feet": [212, 150], "facing": "down"}
+    ],
+    "eatSpots": [
+      {"feet": [110, 174], "facing": "down"},
+      {"feet": [134, 174], "facing": "down"},
+      {"feet": [158, 174], "facing": "down"},
+      {"feet": [182, 174], "facing": "down"}
+    ],
+    "drinkSpots": [
+      {"feet": [92, 150], "facing": "left"}
+    ],
+    "dungSpot": {"feet": [228, 100], "facing": "up"},
+    "wanderRect": [34, 82, 253, 174],
+    "notes": "Which alpacas are inside is game logic. Suggested: in at dusk and in rain, out to the paddock in the morning. Alpacas use the same collision. Starter shed = 4; a bigger shed later can reuse this format."
+  },
+  "palette": {
+    "comment": "Exterior-matched colours plus interior additions (hex).",
+    "wallBoards": ["#b07a3e", "#a97439", "#b4803f", "#ab763b", "#4f3018"],
+    "posts": ["#c48f52", "#b07a3e", "#8a5d2c", "#603a1c"],
+    "endGrain": ["#b98a52", "#9c6a34", "#8a5a2e", "#7a5227"],
+    "hay": ["#f0d87a", "#e0c063", "#be9e48", "#a3843c", "#966e3c"],
+    "bedding": ["#e0c46b", "#d3b55c", "#c2a24f", "#b39446", "#96793a", "#7f6633"],
+    "earth": ["#a9855c", "#9b7b52", "#8f6f48", "#7f6240", "#6b5235"],
+    "stone": ["#a6aab1", "#8a8d94", "#6f7379", "#5c5f66"],
+    "water": ["#d6eef2", "#7ebdc9", "#539bab", "#3f8596"],
+    "grass": ["#98ad69", "#859d5c", "#6f8a4a", "#c9b977", "#a39459"],
+    "textiles": ["#b8323a", "#e8b84a", "#3f8a5a", "#b0407a", "#d9772e", "#e9dfc7"],
+    "salt": ["#f6d9d3", "#e7bdb6", "#c99891"],
+    "dung": ["#8a6a4f", "#6b4f39", "#4b3626", "#33241a"],
+    "lantern": ["#fff1b0", "#ffd65a", "#ff8a2a", "#3c3c42"]
+  }
+}
