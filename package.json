@@ -1,0 +1,9 @@
+{
+  "name": "alpaca-rancher",
+  "private": true,
+  "description": "No dependencies and no build step: this file only tells Node the code is ES modules, so the tests can run.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
