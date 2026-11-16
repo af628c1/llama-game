@@ -101,8 +101,9 @@ export default class Breeding {
   // 'resting', 'stud_unavailable' — and `who` ('sire' or 'dam') where that matters.
   //
   // This is the truth, for the game's own logic: it knows about a pregnancy the player
-  // has not found out about. The screen should ask quipu.getPairingForecast() instead.
-  canBreed(sireId, damId, day = this.world.day) {
+  // has not found out about. The screen should ask quipu.getPairingForecast() instead,
+  // which passes `asPlayerKnows` to have such a pregnancy overlooked.
+  canBreed(sireId, damId, day = this.world.day, { asPlayerKnows = false } = {}) {
     const { pedigree, hooks } = this.world;
     const sire = pedigree.get(sireId);
     const dam = pedigree.get(damId);
@@ -117,7 +118,7 @@ export default class Breeding {
     if (ageOn(dam, day) < MIN_BREED_AGE_F) return no('too_young', 'dam');
     if (ageOn(sire, day) > MAX_BREED_AGE) return no('too_old', 'sire');
     if (ageOn(dam, day) > MAX_BREED_AGE) return no('too_old', 'dam');
-    if (dam.pregnancy) return no('pregnant', 'dam');
+    if (dam.pregnancy && (dam.pregnancy.known || !asPlayerKnows)) return no('pregnant', 'dam');
     if (dam.lastBirthDay !== null && day - dam.lastBirthDay < POSTPARTUM_REST_DAYS) {
       return no('resting', 'dam');
     }
