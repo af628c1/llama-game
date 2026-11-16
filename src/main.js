@@ -6,6 +6,7 @@ import BootScene from './scenes/BootScene.js';
 import RanchScene from './scenes/RanchScene.js';
 import InteriorScene from './scenes/InteriorScene.js';
 import HudScene from './scenes/HudScene.js';
+import { createDebug } from './genetics/debug.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -29,5 +30,7 @@ const config = {
   scene: [BootScene, RanchScene, InteriorScene, HudScene],
 };
 
-// Expose the game instance for debugging in the browser console.
+// Expose the game instance for debugging in the browser console, and with it the genetics
+// dev commands: genetics.help() lists them.
 window.game = new Phaser.Game(config);
+window.genetics = createDebug(() => window.game.registry.get('state').genetics.world);

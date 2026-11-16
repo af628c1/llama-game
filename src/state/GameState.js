@@ -1,6 +1,6 @@
 // Everything about a playthrough that a save file must hold, in one object. It is made of
-// sections — the clock and weather, where the rancher is, the state of the world — and
-// is kept in the registry as 'state', where every scene can reach it:
+// sections — the clock and weather, where the rancher is, the state of the world, the
+// alpacas — and is kept in the registry as 'state', where every scene can reach it:
 //
 //   const state = this.registry.get('state');
 //   state.time.isNight, state.world.objectState('shed', 'feed_trough'), ...
@@ -24,6 +24,7 @@ import TimeState from './TimeState.js';
 import PlayerState from './PlayerState.js';
 import WorldState from './WorldState.js';
 import StatsState from './StatsState.js';
+import GeneticsState from './GeneticsState.js';
 
 // The sections, by the name they have on the state and in save files. Renaming one
 // orphans its data in existing saves, so don't.
@@ -32,6 +33,7 @@ export const SECTIONS = {
   player: PlayerState,
   world: WorldState,
   stats: StatsState,
+  genetics: GeneticsState,
 };
 
 // Bring one section's saved { version, data } up to the version the game is at now.
@@ -86,6 +88,14 @@ export default class GameState {
   // Switch the game over to a set of sections made by build().
   adopt(sections) {
     Object.assign(this, sections);
+  }
+
+  // A night passes: the clock moves on to the next morning, and everything that lives by
+  // the day has its day. This is the one way a new day begins — whatever needs a daily
+  // tick is given it here.
+  nextDay() {
+    this.time.sleep();
+    this.genetics.world.tick(this.time.absoluteDay);
   }
 
   // The few words the menu shows for a slot holding this game.

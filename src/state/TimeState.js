@@ -112,6 +112,8 @@ export default class TimeState {
   }
 
   // Sleep through to the next morning. This is when the new day's weather comes in.
+  // (Scenes call GameState.nextDay(), which does this and gives the day to the rest of
+  // the game.)
   sleep() {
     this.absoluteDay += 1;
     this.minutes = CLOCK.dayStartMinutes;

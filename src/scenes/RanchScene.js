@@ -202,7 +202,7 @@ export default class RanchScene extends Phaser.Scene {
     // 2:00 am: the rancher passes out, and wakes up at home the next morning.
     if (this.state.time.mustSleep) {
       hud.fadeThrough(() => {
-        this.state.time.sleep();
+        this.state.nextDay();
         this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
       }, FADE.sleepHoldMs);
       return;

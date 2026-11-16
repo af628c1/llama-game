@@ -172,7 +172,7 @@ export default class InteriorScene extends Phaser.Scene {
   // on the rancher standing by the bed — which, from any other building, means at home.
   sleepUntilMorning() {
     this.scene.get('Hud').fadeThrough(() => {
-      this.state.time.sleep();
+      this.state.nextDay();
       if (this.id !== HOME_INTERIOR) {
         this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
         return;

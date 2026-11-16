@@ -8,7 +8,9 @@
 //
 // What a family's animals are like is its bloodline (BLOODLINES in config.js).
 
-import { FOUNDERS, BLOODLINES, BLOODLINE_DEFAULTS, LOCI, DEFECTS } from './config.js';
+import {
+  FOUNDERS, BLOODLINES, BLOODLINE_DEFAULTS, LOCI, DEFECTS, BEW_DEAF_CHANCE,
+} from './config.js';
 import { randomGenotype, randomBreedingValues, rollPermEnv, copies } from './genome.js';
 import { getPhenotype as coatOf } from './color.js';
 import { lethalDefect } from './defects.js';
@@ -39,6 +41,17 @@ function baseAnimal(rng, line) {
   const genome = { loci, breedingValues: randomBreedingValues(rng, line.traitMeans) };
   const flags = coatOf(genome).bew ? { blueEyed: true } : {};
   return newAlpaca({ genome, permEnv: rollPermEnv(rng), flags });
+}
+
+// One unrelated adult of a bloodline, registered and alive: a stranger with no ancestors
+// on anyone's books. (For the dev console and for tests; herds come from generateHerd.)
+export function spawnFounder(profile, sex, rng, { pedigree, ownerId = null, day = 0 }) {
+  const [youngest, oldest] = FOUNDERS.ageDays;
+  const alpaca = baseAnimal(rng, bloodline(profile));
+  if (alpaca.flags.blueEyed && rng.chance(BEW_DEAF_CHANCE)) Object.assign(alpaca.flags, { deaf: true, deafKnown: true });
+  return pedigree.add(Object.assign(alpaca, {
+    sex, ownerId, birthDay: Math.round(day - rng.between(youngest, oldest)),
+  }));
 }
 
 // Make sure someone in the herd carries a defect. If nobody does, one animal is given a
