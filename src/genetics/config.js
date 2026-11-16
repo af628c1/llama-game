@@ -230,10 +230,13 @@ export const QUIPU = {
 // A herd is not made of strangers: founders.js starts each family from `baseSize`
 // unrelated animals and quietly breeds `generations` generations from them, using only a
 // few sires each time, so the animals that exist when the story starts share ancestors.
+// With these numbers a herd's animals are on average about as related as half siblings
+// (kinship around 0.13) and slightly inbred themselves (F around 0.04). A bigger base or
+// more sires makes them less so.
 export const FOUNDERS = {
   generations: 3,
-  baseSize: 10,
-  siresPerGeneration: 3,
+  baseSize: 16,
+  siresPerGeneration: 4,
   femaleFraction: 0.7, // of the herd that exists when the story starts
   ageDays: [1.5 * YEAR_DAYS, 7 * YEAR_DAYS], // how old those animals are, at random
   generationGapDays: 7 * YEAR_DAYS, // how much earlier each generation before them was born
