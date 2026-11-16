@@ -20,9 +20,11 @@ export default class RanchScene extends Phaser.Scene {
     super('Ranch');
   }
 
-  // `fromBuilding` is set when the rancher has just walked out of that building's door.
-  create({ fromBuilding } = {}) {
+  // `fromBuilding` is set when the rancher has just walked out of that building's door,
+  // and `rancher` when a saved game is being loaded: the rancher as Player.save() gave them.
+  create({ fromBuilding, rancher } = {}) {
     const manifest = this.cache.json.get('manifest');
+    this.state = this.registry.get('state');
 
     // Everything the rancher bumps into: water tiles and building walls.
     this.solids = this.physics.add.staticGroup();
@@ -42,6 +44,7 @@ export default class RanchScene extends Phaser.Scene {
       const [col, row] = SPAWN.tile;
       this.player = new Player(this, (col + 0.5) * TILE, (row + 0.5) * TILE);
     }
+    if (rancher) this.player.load(rancher, this.solids);
     this.physics.add.collider(this.player.feet, this.solids);
 
     // The camera follows the feet, so it doesn't bob when the rancher hops.
@@ -52,6 +55,12 @@ export default class RanchScene extends Phaser.Scene {
     this.applyZoom();
     this.scale.on('resize', this.applyZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.applyZoom, this));
+  }
+
+  // Where the rancher is, for a save file (see state/PlayerState.js): starting this scene
+  // again with `data` and `rancher` puts them right back.
+  savePlace() {
+    return { scene: this.scene.key, data: {}, name: 'Ranch', rancher: this.player.save() };
   }
 
   // An invisible static body, given by its top-left corner and size in world pixels.
@@ -191,10 +200,9 @@ export default class RanchScene extends Phaser.Scene {
     if (hud.busy) return;
 
     // 2:00 am: the rancher passes out, and wakes up at home the next morning.
-    const clock = this.registry.get('time');
-    if (clock.mustSleep) {
+    if (this.state.time.mustSleep) {
       hud.fadeThrough(() => {
-        clock.sleep();
+        this.state.time.sleep();
         this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
       }, FADE.sleepHoldMs);
       return;

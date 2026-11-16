@@ -51,6 +51,12 @@ export class ShadowText {
     return this;
   }
 
+  setAlpha(alpha) {
+    this.shadow.setAlpha(alpha);
+    this.face.setAlpha(alpha);
+    return this;
+  }
+
   // The same, centered in `box`.
   setCentered(str, box, lineTopY, color, shadowColor) {
     const x = centeredX(box, textWidth(this.scene, this.font, str));

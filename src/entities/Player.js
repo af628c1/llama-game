@@ -9,6 +9,8 @@ import { PLAYER_SPEED, JUMP, TEX } from '../config.js';
 // upper body can overlap walls, roofs and shorelines.
 const FEET = { w: 8, h: 4 };
 
+const FACINGS = ['up', 'down', 'left', 'right'];
+
 export default class Player {
   // (x, y) is where the feet stand, in world pixels. `scale` sizes the whole rancher.
   constructor(scene, x, y, { scale = 1, speed = PLAYER_SPEED, facing = 'down' } = {}) {
@@ -106,9 +108,7 @@ export default class Player {
         this.airborne = false;
         this.z = 0;
       } else {
-        // A parabola from the ground, up to full height at mid-air, back to the ground.
-        const t = this.airTime / JUMP.durationMs;
-        this.z = 4 * JUMP.height * this.scale * t * (1 - t);
+        this.z = this.heightAt(this.airTime);
       }
     }
 
@@ -119,6 +119,13 @@ export default class Player {
     } else {
       this.jumpBuffer = Math.max(0, this.jumpBuffer - delta);
     }
+  }
+
+  // How high the rancher is `airTime` milliseconds into a hop: a parabola from the
+  // ground, up to full height at mid-air, back to the ground.
+  heightAt(airTime) {
+    const t = airTime / JUMP.durationMs;
+    return 4 * JUMP.height * this.scale * t * (1 - t);
   }
 
   // Draw the rancher where physics has put the feet. Depth is the feet's y (not the
@@ -135,5 +142,57 @@ export default class Player {
     this.vx = 0;
     this.vy = 0;
     this.syncArt();
+  }
+
+  // The rancher as a save file keeps them: where the feet stand, which way they face,
+  // and how far into a hop they are. (They are always standing still when the game is
+  // saved, because the menu holds them still.)
+  save() {
+    return {
+      x: this.x,
+      y: this.y,
+      facing: this.facing,
+      flipX: this.art.flipX,
+      airborne: this.airborne,
+      airTime: this.airTime,
+    };
+  }
+
+  // Put the rancher back as save() found them. `solids` is the scene's group of things
+  // that block the way: if the world has changed since the save was made and the spot is
+  // now inside one of them, or off the map, the rancher stays where they are instead.
+  // Returns whether they were moved.
+  load({ x, y, facing, flipX, airborne, airTime }, solids) {
+    if (!this.canStandAt(x, y, solids)) return false;
+    this.placeAt(x, y);
+    if (FACINGS.includes(facing)) this.facing = facing;
+    this.art.setFlipX(flipX === true);
+    if (airborne === true && airTime >= 0 && airTime < JUMP.durationMs) {
+      this.airborne = true;
+      this.airTime = airTime;
+      this.z = this.heightAt(airTime);
+    }
+    this.syncArt();
+    return true;
+  }
+
+  // Would the feet, standing at (x, y), be on the map and clear of everything solid?
+  // Standing right up against a wall is fine: only being more than a pixel inside counts.
+  canStandAt(x, y, solids) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    const { width, height } = this.feet.body;
+    const left = x - width / 2;
+    const right = x + width / 2;
+    const top = y - height;
+
+    const { bounds } = this.scene.physics.world;
+    const slack = 0.01; // the edge of the map itself is a fine place to stand
+    if (left < bounds.left - slack || right > bounds.right + slack
+      || top < bounds.top - slack || y > bounds.bottom + slack) {
+      return false;
+    }
+    return !solids.getChildren().some(({ body }) => (
+      right - 1 > body.left && left + 1 < body.right && y - 1 > body.top && top + 1 < body.bottom
+    ));
   }
 }

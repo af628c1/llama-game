@@ -3,12 +3,13 @@
 A 2D ranching game inspired by Stardew Valley, Harvest Moon, and Story of Seasons —
 except you're not a farmer, you're an **alpaca rancher**.
 
-This is **v0.6: inside the barn**. Explore an open highland ranch — a grassy pasture with
+This is **v0.7: save and load**. Explore an open highland ranch — a grassy pasture with
 a cross-shaped dirt road, a **log-cabin farmhouse** you can walk into and sleep in, an
 open **run-in shelter** (the barn) with its alpaca shed inside, and a pond with a gravel
 bank — all drawn from the Andes-inspired art pack in `assets/`. A clock, a calendar and
-daily weather run in the top-right corner. Alpacas, the pen, garden, chores and the
-economy are coming next (see the roadmap below).
+daily weather run in the top-right corner, and the menu in the top-left saves and loads
+the game in two slots. Alpacas, the pen, garden, chores and the economy are coming next
+(see the roadmap below).
 
 ## Play it
 
@@ -33,8 +34,10 @@ Then open **http://localhost:8000** in your browser.
 | Jump         | `Space`                       |
 | Enter / exit | Walk into the cabin's doorway or the shelter's open front |
 | Sleep        | Click the bed, then **Yes**   |
+| Menu         | The button in the top-left corner, or `Esc` |
+| Save / load  | Menu → **Save** or **Load** → pick a slot |
 
-## What's here (v0.6)
+## What's here (v0.7)
 
 - A 32×22-tile ranch built from the art pack's six terrain tiles: puna grass with
   sparse wildflowers, a cross-shaped dirt road (signposted **To town** ↓ and
@@ -63,6 +66,14 @@ Then open **http://localhost:8000** in your browser.
 - **Sleeping.** Click the bed and answer **Yes** (mouse, or Up/Down + Enter; Esc is No):
   the screen fades out and back in on the next morning, beside the bed. Stay up until
   2:00 am and you pass out and wake at home. After 7 pm the cabin window shows the night.
+- **Saving and loading.** The menu button in the top-left corner (or `Esc`) opens
+  **Save** and **Load**, each with two slots that show the date, time and place of the
+  save in them. A save holds the whole game exactly as it is — the day, the clock to the
+  millisecond, today's and tomorrow's weather, where the rancher stands and which way
+  they face (even mid-hop), and the state of everything in the rooms — and loading puts
+  all of it back. The game stands still while the menu is up. Saving over a slot and
+  loading both ask first. Saves are kept by the browser, for the address the game is
+  served from: another browser, or another port, has its own slots.
 - Crisp pixels at any window size — the camera only ever zooms by whole numbers (2×–4×).
 
 ## How it's built
@@ -86,9 +97,16 @@ Then open **http://localhost:8000** in your browser.
   (`assets/TIME_WEATHER_HUD.md`). The board matches the pack's reference renders pixel for
   pixel. The *rules* — days per season, the clock, the weather odds — are the game's own
   and live in `src/config.js`; the pack's example calendar and odds are not used.
-- **One game-state object.** `src/state/TimeState.js` holds the day, the clock and the
-  weather. The HUD only reads it; a day's weather is seeded by the day, so it never
+- **One game-state object.** `src/state/GameState.js` holds everything about a
+  playthrough, in sections: `time` (the day, the clock and the weather), `player` (where
+  the rancher is), `world` (the state of objects in rooms) and `stats`. Scenes and the HUD
+  show the state; they don't own it. A day's weather is seeded by the day, so it never
   changes once rolled.
+- **Saving is the game state, written down.** A save file is every section's data, each
+  with its own version number, as JSON in the browser's `localStorage` (one entry per
+  slot). Loading is all or nothing: a slot is read and checked in full before the game
+  changes at all, so a damaged save, or one from a newer version, is refused with the
+  game left as it was. See *Making new things saveable* below.
 - **The layout is a text grid** in `src/world/ranchMap.js` — one letter per tile
   (`g` grass, `f` flowers, `d` dirt path, `b` bare ground, `v` gravel, `w` water). Edit the
   grid to reshape the ranch; buildings are placed by an anchor tile.
@@ -96,6 +114,39 @@ Then open **http://localhost:8000** in your browser.
   (`BootScene`) as placeholders. Indoors the rancher is drawn at 2×, the size the
   furniture was made for.
 - Add **`?debug`** to the URL to see the collision boxes and door triggers (green).
+
+### Making new things saveable
+
+The rule: **whatever changes during play and should still be so tomorrow lives in a
+section of the game state.** Then it is saved and loaded without touching the save code or
+the menu.
+
+1. Write a section — for plain values, list the fields and what they are in a new game:
+
+   ```js
+   // src/state/PurseState.js
+   import Section from './Section.js';
+
+   export default class PurseState extends Section {
+     static fields() { return { coins: 50, feedBags: 0 }; }
+   }
+   ```
+
+2. Add it to `SECTIONS` in `src/state/GameState.js` (`purse: PurseState`), and use it from
+   any scene as `this.registry.get('state').purse.coins`.
+
+That is all. Later changes keep old saves working:
+
+- **A new field** is just added to `fields()`; a save from before it existed loads with the
+  field at its new-game value. The same goes for a whole new section.
+- **A field that changes name, meaning or shape**: raise the section's `version` and add a
+  migration from the old one (`static migrations = { 1: (data) => ... }`, see
+  `src/state/Section.js`).
+- A section with more to it than plain values (like `TimeState`) writes its own `save()`
+  and `load()` instead.
+- Things a scene owns while it runs (where the rancher is standing) are handed over at
+  the moment of saving, in the scene's `savePlace()`. A new world scene needs that one
+  method, and to accept `rancher` in `create()`, to be a place a game can be saved in.
 
 ### Project layout
 
@@ -116,17 +167,29 @@ assets/
   reference/          # the pack's 1× pictures of how things should look
 src/
   main.js             # Phaser config + scene registration
-  config.js           # sizes, speeds, jump, fade, zoom rules, calendar, clock, weather
+  config.js           # sizes, speeds, jump, fade, zoom rules, calendar, clock, weather, saves
   scenes/
     BootScene.js      # loads the art pack; starts the clock; draws the placeholder rancher
     RanchScene.js     # ground, buildings, doors, collision, depth sorting, camera
     InteriorScene.js  # a room built from an interior spec; the bed
-    HudScene.js       # the board, questions, the fade, and the ticking clock
+    HudScene.js       # the board, the menu, questions, the fade, the clock; save + load
   state/
+    GameState.js      # the whole state of a playthrough: the list of sections
+    Section.js        # the short way to write a section; versions and migrations
     TimeState.js      # the day, the clock and the weather
+    PlayerState.js    # where the rancher is
+    WorldState.js     # the state of objects in rooms (trough full or empty...)
+    StatsState.js     # time played
+  save/
+    SaveStore.js      # the save slots: the save file, written to and read from the browser
+    SaveError.js      # what can go wrong saving or loading
   ui/
     TimePanel.js      # the time and weather board
-    ConfirmDialog.js  # the yes/no question box
+    ChoicePanel.js    # the panel that asks questions and shows the menu's pages
+    SaveMenu.js       # the menu: Save / Load, the slots, "Overwrite?"
+    MenuButton.js     # the menu button in the top-left corner
+    boardArt.js       # panels and buttons cut from the board's art
+    keys.js           # key presses for the UI, each counted once
     pixelText.js      # shadowed, measured text in the pack's bitmap fonts
   entities/
     Player.js         # the rancher: movement, hop, feet hitbox, y-sort depth
@@ -151,4 +214,4 @@ src/
 - [ ] 🗓️ Use the wall calendar
 - [ ] 🎨 Pixel-art rancher, alpacas and fences, with animations
 - [ ] 🔊 Sound & music
-- [ ] 💾 Save / load
+- [x] 💾 Save / load (two slots)

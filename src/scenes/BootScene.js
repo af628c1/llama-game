@@ -1,4 +1,4 @@
-// BootScene gets every texture ready before the ranch starts, and starts the game's clock.
+// BootScene gets every texture ready before the ranch starts, and starts a new game.
 //
 // Terrain, buildings, interiors and the HUD are real pixel art, loaded from the art pack.
 // Its JSON files are fetched first, then every image and font they list is queued —
@@ -13,7 +13,7 @@
 import { ASSET_MANIFEST, INTERIORS, HUD_SPEC, COLORS, TEX } from '../config.js';
 import { interiorKey, interiorTex, interiorStateTex } from '../world/interiors.js';
 import { HUD_TEX } from '../ui/TimePanel.js';
-import TimeState from '../state/TimeState.js';
+import GameState from '../state/GameState.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -72,10 +72,10 @@ export default class BootScene extends Phaser.Scene {
     this.makePlayer();
     this.makeShadow();
 
-    // A new game: Spring 1 of Year 1, 6:00 am, with its own run of weather. Kept in the
-    // registry, where every scene can reach it.
-    this.registry.set('time', new TimeState({
-      seed: Math.floor(Math.random() * 2 ** 31),
+    // A new game: Spring 1 of Year 1, 6:00 am, with its own run of weather. The whole of
+    // its state is kept in the registry, where every scene can reach it, and is what the
+    // menu saves and loads.
+    this.registry.set('state', new GameState({
       events: this.cache.json.get('hud').events.list,
     }));
 

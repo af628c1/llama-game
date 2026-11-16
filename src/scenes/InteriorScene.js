@@ -1,12 +1,16 @@
 // The inside of a building: one fixed room, centered on screen, built entirely from the
 // art pack's interior spec (assets/<name>_interior.json) — which images to draw and in
 // what order, what is solid, what can be used, where the rancher arrives and where the
-// way out is. The scene is started with { id }, an entry of INTERIORS in config.js, and
-// { wake: true } when the rancher is waking up here rather than walking in.
+// way out is. The scene is started with { id }, an entry of INTERIORS in config.js, plus
+// { wake: true } when the rancher is waking up here rather than walking in, or
+// { rancher } — the rancher as Player.save() gave them — when a saved game is being loaded.
+//
+// Which state the room's stateful objects are in (the trough empty or full) is not the
+// scene's to keep: it lives in the game state's `world` section, so it is saved.
 //
 // Room pixels are world pixels here: the room's top-left is the world's origin.
 
-import { INTERIOR_CHARACTER, HOME_INTERIOR, PLAYER_SPEED, FADE } from '../config.js';
+import { INTERIORS, INTERIOR_CHARACTER, HOME_INTERIOR, PLAYER_SPEED, FADE } from '../config.js';
 import { interiorKey, interiorTex, interiorStateTex } from '../world/interiors.js';
 import { boxFromRect, bodyOverlaps } from '../world/rects.js';
 import Player from '../entities/Player.js';
@@ -16,11 +20,17 @@ export default class InteriorScene extends Phaser.Scene {
     super('Interior');
   }
 
-  create({ id, wake }) {
+  // Can the scene be started with this data? (A save file may name a room that a later
+  // version of the game no longer has.)
+  canStart({ id }) {
+    return Object.hasOwn(INTERIORS, id) && this.cache.json.has(interiorKey(id));
+  }
+
+  create({ id, wake, rancher }) {
     const spec = this.cache.json.get(interiorKey(id));
     this.id = id;
     this.spec = spec;
-    this.clock = this.registry.get('time');
+    this.state = this.registry.get('state');
     [this.roomW, this.roomH] = spec.room.size;
 
     this.cameras.main.setBackgroundColor(spec.art.sceneClearColor);
@@ -37,6 +47,7 @@ export default class InteriorScene extends Phaser.Scene {
       speed: PLAYER_SPEED * INTERIOR_CHARACTER.speedScale,
       facing,
     });
+    if (rancher) this.player.load(rancher, this.solids);
     this.physics.add.collider(this.player.feet, this.solids);
 
     // Ways out: walk down into a trigger to leave through that door.
@@ -75,7 +86,9 @@ export default class InteriorScene extends Phaser.Scene {
       if (o.states) {
         obj = this.add.image(x, y);
         this.stateful[o.id] = { obj, states: o.states };
-        this.setObjectState(o.id, o.defaultState);
+        // The state it was last put in, if the room still has such a state.
+        const saved = this.state.world.objectState(id, o.id);
+        this.showObjectState(o.id, Object.hasOwn(o.states, saved) ? saved : o.defaultState);
       } else if (o.frames) {
         if (!this.anims.exists(key)) {
           this.anims.create({
@@ -93,7 +106,7 @@ export default class InteriorScene extends Phaser.Scene {
       obj.setDepth(o.layer === 'ySorted' ? o.ySortLineY : layerDepth(o.layer));
 
       if (o.collision) this.addSolid(o.collision);
-      if (o.when === 'night') this.nightOnly.push(obj.setVisible(this.clock.isNight));
+      if (o.when === 'night') this.nightOnly.push(obj.setVisible(this.state.time.isNight));
 
       // Click the object itself (not the empty corners of its image) to use it.
       const action = o.interact && actions[o.interact.action];
@@ -111,13 +124,26 @@ export default class InteriorScene extends Phaser.Scene {
     });
   }
 
-  // Show one of an object's states (the trough 'empty' or 'full', the dung pile '0'–'2').
-  // A state with no image shows nothing.
+  // Put an object in one of its states (the trough 'empty' or 'full', the dung pile
+  // '0'–'2'), for good: it is written to the game state, and so saved.
   setObjectState(objectId, state) {
+    this.state.world.setObjectState(this.id, objectId, state);
+    this.showObjectState(objectId, state);
+  }
+
+  // Draw an object in a state. A state with no image shows nothing.
+  showObjectState(objectId, state) {
     const { obj, states } = this.stateful[objectId];
     const hasImage = Boolean(states[state]);
     if (hasImage) obj.setTexture(interiorStateTex(this.id, objectId, state));
     obj.setVisible(hasImage);
+  }
+
+  // Where the rancher is, for a save file (see state/PlayerState.js): starting this scene
+  // again with `data` and `rancher` puts them right back.
+  savePlace() {
+    const name = this.id[0].toUpperCase() + this.id.slice(1); // 'cabin' -> 'Cabin'
+    return { scene: this.scene.key, data: { id: this.id }, name, rancher: this.player.save() };
   }
 
   // An invisible static body covering one of the spec's rectangles.
@@ -146,7 +172,7 @@ export default class InteriorScene extends Phaser.Scene {
   // on the rancher standing by the bed — which, from any other building, means at home.
   sleepUntilMorning() {
     this.scene.get('Hud').fadeThrough(() => {
-      this.clock.sleep();
+      this.state.time.sleep();
       if (this.id !== HOME_INTERIOR) {
         this.scene.start('Interior', { id: HOME_INTERIOR, wake: true });
         return;
@@ -173,11 +199,11 @@ export default class InteriorScene extends Phaser.Scene {
   update(time, delta) {
     const hud = this.scene.get('Hud');
     this.player.update(delta, hud.busy);
-    this.nightOnly.forEach((obj) => obj.setVisible(this.clock.isNight));
+    this.nightOnly.forEach((obj) => obj.setVisible(this.state.time.isNight));
     if (hud.busy) return;
 
     // 2:00 am: too tired to stay up.
-    if (this.clock.mustSleep) {
+    if (this.state.time.mustSleep) {
       this.sleepUntilMorning();
       return;
     }

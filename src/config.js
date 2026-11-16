@@ -73,6 +73,17 @@ export const INTERIORS = {
   shed: 'assets/shed_interior.json',
 };
 
+// Saving. `slots` is how many save slots the menu offers; each is one entry in the
+// browser's localStorage, named `storageKey` + its number. `format` is the version of the
+// save file's outer layout (save/SaveStore.js) — the state inside it is versioned section
+// by section (state/GameState.js).
+export const SAVE = {
+  slots: 2,
+  game: 'alpaca-rancher',
+  storageKey: 'alpaca-rancher:save:',
+  format: 1,
+};
+
 // Interior art is drawn for a rancher about one tile wide and 1.4 tall — twice the size
 // of the outdoor placeholder — so indoors the rancher is drawn at 2x. Walking speed is
 // raised with them, a little less than in proportion so small rooms don't feel frantic.

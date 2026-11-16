@@ -1,6 +1,7 @@
-// The game's clock, calendar and weather, in one object: the HUD only reads it, the world
-// scenes ask it questions ("is it night?"), and a save file will be able to store it.
-// The rules it follows are CALENDAR, CLOCK and WEATHER in config.js.
+// The game's clock, calendar and weather: the HUD only reads it, and the world scenes ask
+// it questions ("is it night?"). It is the `time` section of the game state (GameState.js),
+// so it is saved and loaded with the game. The rules it follows are CALENDAR, CLOCK and
+// WEATHER in config.js.
 
 import { CALENDAR, CLOCK, WEATHER } from '../config.js';
 
@@ -32,11 +33,16 @@ export function clockText(minutes) {
   return `${hour % 12 || 12}:${mm} ${hour < 12 ? 'am' : 'pm'}`;
 }
 
+const isCount = (n) => Number.isInteger(n) && n >= 0;
+
 export default class TimeState {
-  // `seed` makes one playthrough's weather its own; `events` is the HUD pack's list of
-  // festivals and birthdays ({ type, label, season, day, forceWeather? }).
-  constructor({ seed, events = [] }) {
-    this.seed = seed;
+  static version = 1;
+  static migrations = {};
+
+  // A new game: Spring 1 of Year 1, 6:00 am. `events` is the HUD pack's list of festivals
+  // and birthdays ({ type, label, season, day, forceWeather? }).
+  constructor({ events = [] }) {
+    this.seed = Math.floor(Math.random() * 2 ** 31); // makes this playthrough's weather its own
     this.events = events;
 
     this.absoluteDay = 0;
@@ -112,5 +118,21 @@ export default class TimeState {
     this.sinceTickMs = 0;
     this.weather = this.tomorrowWeather;
     this.tomorrowWeather = this.rollWeather(this.absoluteDay + 1);
+  }
+
+  // For the save file. Today's and tomorrow's weather are stored as rolled, not rolled
+  // again from the seed on loading, so that a later change to the odds in config.js can't
+  // change a day that has already begun. `events` comes from the art pack, not the save.
+  save() {
+    const { seed, absoluteDay, minutes, sinceTickMs, weather, tomorrowWeather } = this;
+    return { seed, absoluteDay, minutes, sinceTickMs, weather, tomorrowWeather };
+  }
+
+  load({ seed, absoluteDay, minutes, sinceTickMs, weather, tomorrowWeather }) {
+    const good = isCount(seed) && isCount(absoluteDay) && isCount(minutes)
+      && Number.isFinite(sinceTickMs) && sinceTickMs >= 0
+      && WEATHER.types.includes(weather) && WEATHER.types.includes(tomorrowWeather);
+    if (!good) throw new Error('the clock or the weather makes no sense');
+    Object.assign(this, { seed, absoluteDay, minutes, sinceTickMs, weather, tomorrowWeather });
   }
 }
