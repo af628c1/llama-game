@@ -137,17 +137,27 @@ test('founders are deterministic, and take their randomness from the rng they ar
   assert.notEqual(snapshot(5), snapshot(6));
 });
 
-test('a new game: the herds of WORLD_HERDS, the player\'s on record', () => {
+test('a new game: the herds of WORLD_HERDS, the player\'s herd book on record', () => {
   const world = Genetics.newGame({ seed: 9 });
   WORLD_HERDS.forEach(({ ownerId, count }) => {
     assert.equal(world.pedigree.herdOf(ownerId).length, count, ownerId);
   });
   const mine = world.pedigree.herdOf(PLAYER_ID);
   assert.ok(mine.length >= 2);
-  assert.ok(mine.every((a) => world.quipu.isRecorded(a.id)));
-  const others = world.pedigree.all().filter((a) => a.ownerId !== PLAYER_ID || !a.alive);
-  assert.ok(others.every((a) => !world.quipu.isRecorded(a.id)), 'nobody else is');
+  // The player's animals and their ancestors are on record; nobody else's are.
+  world.pedigree.all().forEach((a) => assert.equal(world.quipu.isRecorded(a.id), a.ownerId === PLAYER_ID));
+  assert.ok(world.pedigree.all().some((a) => a.ownerId === PLAYER_ID && !a.alive));
   assert.equal(world.day, 0);
+  // So the quipu can see how related the player's own animals are...
+  const [first, second] = [mine.find((a) => a.sex === 'M'), mine.find((a) => a.sex === 'F')];
+  assert.equal(
+    world.quipu.getPairingForecast(first.id, second.id, 3).inbreeding.coefficient,
+    Math.round(world.pedigree.kinship(first.id, second.id) * 1e4) / 1e4,
+  );
+  // ...but not another family's.
+  const theirs = world.pedigree.herdOf(WORLD_HERDS[1].ownerId);
+  const [stud, ewe] = [theirs.find((a) => a.sex === 'M'), theirs.find((a) => a.sex === 'F')];
+  assert.equal(world.quipu.getPairingForecast(stud.id, ewe.id, 3).inbreeding.coefficient, 0);
 
   // The player can start breeding at once.
   const sire = mine.find((a) => a.sex === 'M');

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { GENETICS_SCHEMA_VERSION, PLAYER_ID, YEAR_DAYS, DEFECTS, TRAITS } from '../config.js';
+import { GENETICS_SCHEMA_VERSION, PLAYER_ID, YEAR_DAYS, DEFECTS } from '../config.js';
 import Genetics from '../Genetics.js';
 import Emitter from '../events.js';
 import Modifiers from '../modifiers.js';
@@ -180,5 +180,4 @@ test('bad data is refused whole', () => {
 test('a new game\'s save is a sensible size', () => {
   const bytes = JSON.stringify(serialize(Genetics.newGame({ seed: 47 }))).length;
   assert.ok(bytes < 200_000, `${bytes} bytes`);
-  assert.equal(TRAITS.size.mu > 0, true);
 });

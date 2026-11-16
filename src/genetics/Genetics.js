@@ -54,7 +54,7 @@ export default class Genetics {
     this.breeding = new Breeding(this);
   }
 
-  // The world a new game starts in: the herds of WORLD_HERDS, the player's own on record.
+  // The world a new game starts in: the herds of WORLD_HERDS.
   static newGame(options) {
     const world = new Genetics(options);
     WORLD_HERDS.forEach(({ ownerId, bloodline, count }) => {
@@ -63,10 +63,12 @@ export default class Genetics {
     return world;
   }
 
-  // Add a herd of `count` animals of a bloodline (founders.js) to the world.
+  // Add a herd of `count` animals of a bloodline (founders.js) to the world. The player's
+  // own herd comes with its herd book: its ancestors are on record too. Other families'
+  // are their own business until the story opens them (quipu.recordHerd).
   generateHerd(profile, count, { ownerId = null, day = this.day, rng = this.rng } = {}) {
     const herd = generateHerd(profile, count, rng, { pedigree: this.pedigree, ownerId, day });
-    if (ownerId === PLAYER_ID) herd.forEach((alpaca) => this.quipu.record(alpaca.id));
+    if (ownerId === PLAYER_ID) this.quipu.recordHerd(PLAYER_ID);
     return herd;
   }
 

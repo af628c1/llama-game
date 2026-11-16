@@ -11,7 +11,6 @@ import SaveStore from '../../save/SaveStore.js';
 import { PLAYER_ID, WORLD_HERDS, GESTATION_DAYS, YEAR_DAYS } from '../config.js';
 import { serialize } from '../serialize.js';
 import { createDebug, simulateGenerations } from '../debug.js';
-import { isCarrier } from '../defects.js';
 
 const content = { events: [] };
 const place = { scene: 'Ranch', data: {}, name: 'Ranch', rancher: { x: 1, y: 2 } };
@@ -186,5 +185,4 @@ test('simulateGenerations: selection works, inbreeding costs, and it is repeatab
   assert.ok(deaths(sibling) > deaths(random) + 0.15, `${deaths(sibling)} vs ${deaths(random)}`);
   assert.ok(last(sibling).fertility < last(random).fertility - 4);
   assert.throws(() => simulateGenerations(1, 10, 'no-such-strategy'));
-  assert.equal(typeof isCarrier, 'function');
 });

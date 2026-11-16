@@ -346,9 +346,13 @@ test('cria survival: inbreeding costs lives', () => {
   // The penalty itself, plus a little more through the cria's own depressed hardiness.
   assert.ok(inbred.rate < BASE_CRIA_SURVIVAL - 0.25 * INBREEDING_SURVIVAL_PENALTY + 0.01, `inbred survival ${inbred.rate}`);
   assert.ok(inbred.rate > BASE_CRIA_SURVIVAL - 0.25 * INBREEDING_SURVIVAL_PENALTY - 0.08, `inbred survival ${inbred.rate}`);
+  // Most of those deaths are put down to the inbreeding: the share of them that an
+  // outbred cria with the same luck would have survived.
   const causes = inbred.crias.filter((c) => !c.alive).map((c) => c.deathCause);
   const share = causes.filter((c) => c === 'inbreeding_weakness').length / causes.length;
-  assert.ok(share > 0.7 && share < 0.95, `${share} of the deaths were down to inbreeding`);
+  const lost = 0.25 * INBREEDING_SURVIVAL_PENALTY;
+  near(share, lost / (1 - inbred.rate), 0.08, 'deaths down to inbreeding');
+  assert.ok(share > 0.5);
 });
 
 test('modifiers: all four hooks fire, and ride along with the pregnancy and the cria', () => {

@@ -14,11 +14,11 @@
 //   3  + the colour alleles it must carry, and how related a pair is
 //
 // RECORDS. Working things out takes records, and the player only has records of some
-// animals: every animal that is or was theirs, every cria born to them, every stud they
-// have used, and whatever the story hands them (record(), recordHerd()). A record holds
-// what the animal looks like and who its parents are. Relatives that aren't on record
-// tell the player nothing, so two animals bought from one family may be closer kin than
-// the quipu can show.
+// animals: their own herd and its ancestors (the family's herd book), every animal that
+// comes to be theirs, every cria born to them, every stud they use, and whatever the
+// story hands them (record(), recordHerd()). A record holds what the animal looks like
+// and who its parents are. Relatives that aren't on record tell the player nothing, so
+// two animals bought from another family may be closer kin than the quipu can show.
 //
 // HOW THIS FILE KEEPS THE SECRET. Nothing below reads a genome or a breeding value,
 // except observe(): it turns an animal into what can be seen of it, and everything else

@@ -3,13 +3,15 @@
 A 2D ranching game inspired by Stardew Valley, Harvest Moon, and Story of Seasons —
 except you're not a farmer, you're an **alpaca rancher**.
 
-This is **v0.7: save and load**. Explore an open highland ranch — a grassy pasture with
+This is **v0.8: the herd's genetics**. Explore an open highland ranch — a grassy pasture with
 a cross-shaped dirt road, a **log-cabin farmhouse** you can walk into and sleep in, an
 open **run-in shelter** (the barn) with its alpaca shed inside, and a pond with a gravel
 bank — all drawn from the Andes-inspired art pack in `assets/`. A clock, a calendar and
 daily weather run in the top-right corner, and the menu in the top-left saves and loads
-the game in two slots. Alpacas, the pen, garden, chores and the economy are coming next
-(see the roadmap below).
+the game in two slots. Behind the scenes the herd already exists — every alpaca with its
+genes, its pedigree and its pregnancies — though nothing of it is on screen yet. Alpacas
+you can see, the pen, garden, chores and the economy are coming next (see the roadmap
+below).
 
 ## Play it
 
@@ -37,7 +39,7 @@ Then open **http://localhost:8000** in your browser.
 | Menu         | The button in the top-left corner, or `Esc` |
 | Save / load  | Menu → **Save** or **Load** → pick a slot |
 
-## What's here (v0.7)
+## What's here (v0.8)
 
 - A 32×22-tile ranch built from the art pack's six terrain tiles: puna grass with
   sparse wildflowers, a cross-shaped dirt road (signposted **To town** ↓ and
@@ -74,6 +76,14 @@ Then open **http://localhost:8000** in your browser.
   all of it back. The game stands still while the menu is up. Saving over a slot and
   loading both ask first. Saves are kept by the browser, for the address the game is
   served from: another browser, or another port, has its own slots.
+- **The herd's genetics (no screens yet).** Every alpaca has hidden genes: Mendelian coat
+  colour and fleece type, eight heritable traits from fibre fineness to hardiness, and
+  recessive defects that carriers pass on unseen. Crias are born of real meiosis, relatives
+  are tracked for good, and inbreeding costs fertility, health and lives. The player only
+  ever learns what their records support — the "quipu" layer — and a pregnancy stays
+  unknown until a spit-off test shows it. The herd lives by the game's days and is saved
+  with the game. Try `genetics.help()` in the browser's dev console; the whole system is
+  described in `src/genetics/README.md`.
 - Crisp pixels at any window size — the camera only ever zooms by whole numbers (2×–4×).
 
 ## How it's built
@@ -99,9 +109,17 @@ Then open **http://localhost:8000** in your browser.
   and live in `src/config.js`; the pack's example calendar and odds are not used.
 - **One game-state object.** `src/state/GameState.js` holds everything about a
   playthrough, in sections: `time` (the day, the clock and the weather), `player` (where
-  the rancher is), `world` (the state of objects in rooms) and `stats`. Scenes and the HUD
-  show the state; they don't own it. A day's weather is seeded by the day, so it never
-  changes once rolled.
+  the rancher is), `world` (the state of objects in rooms), `stats` and `genetics` (the
+  alpacas). Scenes and the HUD show the state; they don't own it. A day's weather is
+  seeded by the day, so it never changes once rolled. A new day begins in one place,
+  `GameState.nextDay()`, which is where anything that lives by the day gets its tick.
+- **Genetics is pure logic** in `src/genetics/`, with no rendering in it, and the screen
+  may read animals only through `quipu.getPlayerView()`. Every number is in
+  `src/genetics/config.js`, and everything random comes from one seeded generator, so a
+  seed — or a saved game — fixes all that follows.
+- **Tests.** `npm test` runs the genetics tests on Node's built-in test runner (Node 20
+  or newer; nothing to install). `package.json` exists only for that: the game itself
+  still has no dependencies and no build step.
 - **Saving is the game state, written down.** A save file is every section's data, each
   with its own version number, as JSON in the browser's `localStorage` (one entry per
   slot). Loading is all or nothing: a slot is read and checked in full before the game
@@ -174,12 +192,20 @@ src/
     InteriorScene.js  # a room built from an interior spec; the bed
     HudScene.js       # the board, the menu, questions, the fade, the clock; save + load
   state/
-    GameState.js      # the whole state of a playthrough: the list of sections
+    GameState.js      # the whole state of a playthrough: the list of sections; nextDay()
     Section.js        # the short way to write a section; versions and migrations
     TimeState.js      # the day, the clock and the weather
     PlayerState.js    # where the rancher is
     WorldState.js     # the state of objects in rooms (trough full or empty...)
     StatsState.js     # time played
+    GeneticsState.js  # the alpacas: holds the genetics world; events, hooks, modifiers
+  genetics/           # the herd's genetics: see its README.md
+    config.js         # every tunable: traits, defects, breeding, bloodlines
+    Genetics.js       # the world: registry + breeding + quipu + the daily tick
+    quipu.js          # what the player knows — the only read path for the screen
+    ...               # rng, genome, color, traits, defects, pedigree, breeding,
+                      # modifiers, founders, serialize, events, debug
+    tests/            # npm test
   save/
     SaveStore.js      # the save slots: the save file, written to and read from the browser
     SaveError.js      # what can go wrong saving or loading
@@ -202,7 +228,9 @@ src/
 
 ## Roadmap
 
-- [ ] 🦙 Alpacas you can feed and pet (hunger / happiness)
+- [x] 🧬 Alpaca genetics, breeding and pedigrees (logic only)
+- [ ] 🦙 Alpacas you can see, feed and pet (hunger / happiness)
+- [ ] 📿 Quipu screens: herd records, pairing forecasts
 - [ ] ☀️ Day/night lighting + player energy
 - [ ] 🎒 Inventory + a shop to buy feed and sell wool
 - [x] 🎨 Real pixel art for terrain, the house and the barn

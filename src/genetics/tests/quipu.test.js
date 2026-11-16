@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  QUIPU, QUIPU_SKILL, PLAYER_ID, TRAITS, YEAR_DAYS, BREEDING, POSTPARTUM_REST_DAYS,
+  QUIPU, QUIPU_SKILL, PLAYER_ID, TRAITS, YEAR_DAYS, POSTPARTUM_REST_DAYS,
 } from '../config.js';
 import Genetics from '../Genetics.js';
 import { TRAIT_NAMES, randomBreedingValues, rollPermEnv } from '../genome.js';
@@ -558,5 +558,4 @@ test('pairing forecast: what the player can see stands in the way', () => {
   const young = adult(world, 'F', { age: 20 });
   assert.deepEqual(world.quipu.getPairingForecast(sire.id, young.id, 0).canBreed, { ok: false, reason: 'too_young', who: 'dam' });
   assert.deepEqual(world.quipu.getPairingForecast(young.id, sire.id, 0).canBreed, { ok: false, reason: 'wrong_sex', who: 'sire' });
-  assert.equal(BREEDING.spitOff.reliability < 1, true);
 });

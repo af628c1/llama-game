@@ -196,10 +196,11 @@ export const BREEDING = {
 };
 
 // Whether a newborn lives: BASE_CRIA_SURVIVAL, less the inbreeding coefficient times
-// INBREEDING_SURVIVAL_PENALTY (a sibling mating, F = 0.25, costs 0.3), moved by each point
-// of the cria's hardiness away from 50.
+// INBREEDING_SURVIVAL_PENALTY (a sibling mating, F = 0.25, costs 0.2; a mating within one
+// family's herd, F around 0.13, about 0.1), moved by each point of the cria's hardiness
+// away from 50 — which inbreeding lowers too.
 export const BASE_CRIA_SURVIVAL = 0.93;
-export const INBREEDING_SURVIVAL_PENALTY = 1.2;
+export const INBREEDING_SURVIVAL_PENALTY = 0.8;
 export const CRIA_SURVIVAL = { perHardiness: 0.004, min: 0.05, max: 0.99 };
 
 // --- Quipu: what the player can know -----------------------------------------------------
